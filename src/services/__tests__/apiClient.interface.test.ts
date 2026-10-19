@@ -132,9 +132,9 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
     expect(validated.metrics).toBeUndefined();
   });
 
-  it('supports all 8 Karate and Taekwondo techniques in ACTION_METADATA with honest provenance', () => {
+  it('supports all 12 Karate and Taekwondo techniques in ACTION_METADATA with honest provenance', () => {
     const actionKeys = Object.keys(ACTION_METADATA) as ActionType[];
-    expect(actionKeys.length).toBe(8);
+    expect(actionKeys.length).toBe(12);
     for (const act of actionKeys) {
       const meta = ACTION_METADATA[act];
       expect(meta.label.length).toBeGreaterThan(0);

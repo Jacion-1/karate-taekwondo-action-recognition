@@ -537,9 +537,26 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
               <div className="flex items-center gap-1 bg-zinc-900/80 p-0.5 rounded-full border border-white/[0.06]">
                 {(
                   [
-                    { key: 'all', label: '全部 8' },
-                    { key: 'karate', label: '空手道 5' },
-                    { key: 'taekwondo', label: '跆拳道 5' },
+                    {
+                      key: 'all',
+                      label: `全部 ${Object.keys(ACTION_METADATA).length}`,
+                    },
+                    {
+                      key: 'karate',
+                      label: `空手道 ${
+                        Object.values(ACTION_METADATA).filter(
+                          (m) => m.discipline === 'karate' || m.discipline === 'both'
+                        ).length
+                      }`,
+                    },
+                    {
+                      key: 'taekwondo',
+                      label: `跆拳道 ${
+                        Object.values(ACTION_METADATA).filter(
+                          (m) => m.discipline === 'taekwondo' || m.discipline === 'both'
+                        ).length
+                      }`,
+                    },
                   ] as const
                 ).map((tab) => (
                   <button

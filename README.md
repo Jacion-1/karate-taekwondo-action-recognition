@@ -63,12 +63,12 @@ npm run build
 - **Sensei AI 閉環捷徑列**：拍攝或匯入完成後，底部立即浮現 **「立即識別並查看報告」** 按鈕，一鍵完成分析並跳轉至報告頁。
 - **Sensei AI 識別模式與動作技術圖譜**：
   - 預設為 **「AI 自動比對識別」**。
-  - 提供 **`全部 8` | `空手道 5` | `跆拳道 5`** 分類篩選，點擊任一動作卡片可檢視其標準關節角度區間、建議拍攝視角（`cameraViewHint`）與評估重點，或鎖定該動作進行專項練習。
+  - 提供 **`全部 12` | `空手道 8` | `跆拳道 8`** 分類篩選，點擊任一動作卡片可檢視其標準關節角度區間、建議拍攝視角（`cameraViewHint`）與評估重點，或鎖定該動作進行專項練習。
 
 ### 2. 動作影片庫 (`src/features/vault/VideoVault.tsx`)
 - 自動透過 `useLiveQuery` 即時監聽本地 IndexedDB `videos` 資料表，並顯示瀏覽器儲存配額估算。
 - 顯示影片來源（`實機拍攝` / `檔案匯入` / `範例模擬`）、報告來源標籤（`模擬` / `後端`）、檔案大小、拍攝時間、以及五種狀態燈號（`待分析`、`上傳中`、`辨識中`、`已完成`、`失敗`）。
-- 支援依 **動作類別（含「待識別動作」與 8 項標準動作）** 及 **分析狀態** 進行篩選，並支援具備防重入鎖與批次進度顯示之 **「批次識別與評估」** 與原片預覽。
+- 支援依 **動作類別（含「待識別動作」與 12 項標準動作）** 及 **分析狀態** 進行篩選，並支援具備防重入鎖與批次進度顯示之 **「批次識別與評估」** 與原片預覽。
 
 ### 3. 視覺化分析報告儀表板 (`src/features/analysis/AnalysisDashboard.tsx`)
 - **模擬資料醒目標示**：當報告來源 `source === 'mock'` 時，於報告頁頂部固定顯示 **「模擬資料（非真實辨識結果）」** 提示橫幅；影片庫卡片與匯出之 JSON 亦完整標記 `source`。
@@ -88,20 +88,24 @@ npm run build
 
 ---
 
-## 四、內建 8 大空手道與跆拳道標準動作資料庫 (`ACTION_METADATA`)
+## 四、內建 12 大空手道與跆拳道標準動作資料庫 (`ACTION_METADATA`)
 
 定義於 [`src/types/martial-arts.types.ts`](src/types/martial-arts.types.ts)。目前各動作之角度區間皆標註為 **`初始經驗閾值，待驗證`（`provenance.status = 'heuristic-unverified'`）**，待後續填入實際文獻或教練實測驗證來源後再切換為 `cited`：
 
 | 動作代碼 (`ActionType`) | 動作名稱 | 國際術語 (日 / 韓文) | 所屬武術 | 類別 | 主要觀測關節 (`primaryJoints`) | 標準峰值角度區間 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `straight_punch` | **正拳攻擊** | *Gyaku-Zuki* / 逆突き | 空手道 | 直線拳法 | `right_elbow`, `torso`, `hip` | 右肘伸展 `165°–178°` |
-| `age_uke` | **上段格擋** | *Jodan Age-Uke* / 上段揚げ受け | 空手道 | 防禦格擋 | `right_elbow`, `left_elbow`, `torso` | 格擋肘角 `92°–112°` |
-| `gedan_barai` | **下段格擋** | *Gedan-Barai* / 下段払い | 空手道 | 防禦格擋 | `left_elbow`, `hip`, `torso` | 終點肘角 `150°–168°` |
-| `front_kick` | **前踢** | *Mae-Geri* / *Ap-Chagi* (앞차기) | 空手道・跆拳道 | 直線腿法 | `right_knee`, `hip`, `torso` | 彈踢膝伸展 `165°–178°` |
-| `roundhouse_kick` | **迴旋踢** | *Dollyo-Chagi* (돌려차기) / *Mawashi-Geri* | 跆拳道 | 迴旋腿法 | `right_knee`, `hip`, `torso` | 鞭甩膝伸展 `160°–176°` |
-| `side_kick` | **側踢** | *Yeop-Chagi* (옆차기) / *Yoko-Geri* | 空手道・跆拳道 | 直線腿法 | `left_knee`, `hip`, `torso` | 側踹膝伸展 `162°–177°` |
-| `back_kick` | **轉身後踢** | *Dwit-Chagi* (뒷차기) / *Ushiro-Geri* | 跆拳道 | 旋轉腿法 | `right_knee`, `hip`, `torso` | 後踹膝伸展 `160°–175°` |
-| `axe_kick` | **下壓踢** | *Naeryeo-Chagi* (내려차기) / *Kakato-Otoshi* | 跆拳道 | 高空劈腿 | `right_knee`, `hip`, `torso` | 劈落膝伸展 `165°–179°` |
+| `straight_punch` | **後手逆突正拳** | *Gyaku-Zuki* (逆突き) / *Baro-Jireugi* (바로지르기) | 空手道 | 直線拳法 | `right_elbow`, `torso`, `hip` | 右肘伸展 `165°–178°` |
+| `lunge_punch` | **前屈立・追擊順拳** | *Oi-Zuki* (追い突き) / *Bandae-Jireugi* (반대지르기) | 空手道・跆拳道 | 步法與正拳 | `right_elbow`, `left_knee`, `torso` | 出拳肘角 `165°–178°` |
+| `elbow_strike` | **近身肘擊** | *Empi-Uchi* (猿臂打ち / 肘打ち) | 空手道 | 近身肘法 | `right_elbow`, `hip`, `torso` | 摺疊肘角 `35°–55°` |
+| `age_uke` | **上段格擋** | *Jodan Age-Uke* (上段揚げ受け) / *Eolgul-Makgi* (얼굴막기) | 空手道 | 防禦格擋 | `right_elbow`, `left_elbow`, `torso` | 格擋肘角 `92°–112°` |
+| `soto_uke` | **中段外受格擋** | *Soto-Uke* (外受け) / *Momtong-Makgi* (몸통막기) | 空手道・跆拳道 | 防禦格擋 | `right_elbow`, `torso`, `hip` | 格擋肘角 `85°–105°` |
+| `gedan_barai` | **下段格擋** | *Gedan-Barai* (下段払い) / *Arae-Makgi* (아래막기) | 空手道 | 防禦格擋 | `left_elbow`, `hip`, `torso` | 終點肘角 `150°–168°` |
+| `front_kick` | **前踢** | *Mae-Geri* (前蹴り) / *Ap-Chagi* (앞차기) | 空手道・跆拳道 | 直線腿法 | `right_knee`, `hip`, `torso` | 彈踢膝伸展 `165°–178°` |
+| `roundhouse_kick` | **橫踢／迴旋踢** | *Dollyo-Chagi* (돌려차기) / *Mawashi-Geri* (回し蹴り) | 跆拳道 | 迴旋腿法 | `right_knee`, `hip`, `torso` | 鞭甩膝伸展 `160°–176°` |
+| `side_kick` | **側踢** | *Yeop-Chagi* (옆차기) / *Yoko-Geri* (横蹴り) | 空手道・跆拳道 | 直線腿法 | `left_knee`, `hip`, `torso` | 側踹膝伸展 `162°–177°` |
+| `back_kick` | **轉身後踢** | *Dwit-Chagi* (뒷차기) / *Ushiro-Geri* (後ろ蹴り) | 跆拳道 | 旋轉腿法 | `right_knee`, `hip`, `torso` | 後踹膝伸展 `160°–175°` |
+| `axe_kick` | **下劈／下壓踢** | *Naeryeo-Chagi* (내려차기) / *Kakato-Otoshi* (踵落とし) | 跆拳道 | 高空劈腿 | `right_knee`, `hip`, `torso` | 劈落膝伸展 `165°–179°` |
+| `hook_kick` | **勾踢／後旋踢** | *Huryeo-Chagi* (후려차기) / *Ura-Mawashi-Geri* (裏回し蹴り) | 跆拳道 | 擺勾腿法 | `right_knee`, `hip`, `torso` | 勾擊膝角 `95°–125°` |
 
 ---
 
@@ -267,7 +271,7 @@ karate-taekwondo-action-recognition/
 
 #### 支援的欄位列舉值：
 - **`source`**：`'backend'` | `'mock'`
-- **`actionType`**：`'straight_punch'` | `'age_uke'` | `'gedan_barai'` | `'front_kick'` | `'roundhouse_kick'` | `'side_kick'` | `'back_kick'` | `'axe_kick'`
+- **`actionType`**：`'straight_punch'` | `'lunge_punch'` | `'elbow_strike'` | `'age_uke'` | `'soto_uke'` | `'gedan_barai'` | `'front_kick'` | `'roundhouse_kick'` | `'side_kick'` | `'back_kick'` | `'axe_kick'` | `'hook_kick'`
 - **`jointName`**：`'left_elbow'` | `'right_elbow'` | `'left_knee'` | `'right_knee'` | `'hip'` | `'torso'`
 - **`severity`**：`'minor'` | `'moderate'` | `'critical'`
 - **`grade`**：`'A'` | `'B'` | `'C'` | `'D'`

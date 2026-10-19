@@ -35,11 +35,26 @@ function generateRealisticSeries(
     let standardMax: number;
     let actualAngle: number;
 
-    if (actionType === 'straight_punch' && jointName === 'right_elbow') {
+    if (
+      (actionType === 'straight_punch' || actionType === 'lunge_punch') &&
+      jointName === 'right_elbow'
+    ) {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(70 + wave * 95);
       standardMax = Math.round(85 + wave * 95);
       const deviation = progress > 0.42 && progress < 0.58 ? -14 : Math.sin(i * 0.9) * 3;
+      actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
+    } else if (actionType === 'lunge_punch' && jointName === 'left_knee') {
+      const wave = Math.sin(progress * Math.PI);
+      standardMin = Math.round(150 - wave * 45);
+      standardMax = Math.round(166 - wave * 41);
+      const deviation = progress > 0.45 && progress < 0.65 ? 14 : Math.cos(i * 0.8) * 3;
+      actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
+    } else if (actionType === 'elbow_strike' && jointName === 'right_elbow') {
+      const wave = Math.sin(progress * Math.PI);
+      standardMin = Math.round(115 - wave * 80);
+      standardMax = Math.round(132 - wave * 77);
+      const deviation = progress > 0.43 && progress < 0.59 ? 15 : Math.sin(i * 0.85) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
     } else if (actionType === 'age_uke' && jointName === 'right_elbow') {
       const wave = Math.sin(progress * Math.PI);
@@ -47,11 +62,25 @@ function generateRealisticSeries(
       standardMax = Math.round(68 + wave * 44);
       const deviation = progress > 0.44 && progress < 0.58 ? 14 : Math.sin(i * 0.8) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
+    } else if (actionType === 'soto_uke' && jointName === 'right_elbow') {
+      const wave = Math.sin(progress * Math.PI);
+      standardMin = Math.round(125 - wave * 40);
+      standardMax = Math.round(142 - wave * 37);
+      const deviation = progress > 0.44 && progress < 0.6 ? 15 : Math.cos(i * 0.75) * 3;
+      actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
     } else if (actionType === 'gedan_barai' && jointName === 'left_elbow') {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(62 + wave * 88);
       standardMax = Math.round(76 + wave * 92);
       const deviation = progress > 0.45 && progress < 0.6 ? -13 : Math.cos(i * 0.8) * 3;
+      actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
+    } else if (actionType === 'hook_kick' && jointName === 'right_knee') {
+      // 勾踢獨特波形：先伸直展髖 (progress ~0.35 達 160°+) 再瞬間屈膝勾回 (progress ~0.55 降至 105°)
+      const extendPhase = Math.exp(-Math.pow((progress - 0.34) / 0.14, 2));
+      const hookPhase = Math.exp(-Math.pow((progress - 0.54) / 0.12, 2));
+      standardMin = Math.round(115 + extendPhase * 45 - hookPhase * 20);
+      standardMax = Math.round(135 + extendPhase * 40 - hookPhase * 10);
+      const deviation = progress > 0.46 && progress < 0.62 ? 16 : Math.sin(i * 0.7) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
     } else if (
       (actionType === 'roundhouse_kick' ||
@@ -101,23 +130,31 @@ const DEMO_ACTION_CYCLE: ActionType[] = [
   'roundhouse_kick',
   'straight_punch',
   'front_kick',
+  'lunge_punch',
   'age_uke',
+  'soto_uke',
   'side_kick',
   'back_kick',
   'gedan_barai',
+  'elbow_strike',
   'axe_kick',
+  'hook_kick',
 ];
 let demoCycleIndex = 0;
 
 const ACTION_CONFIDENCE_MAP: Record<ActionType, number> = {
   straight_punch: 96.4,
+  lunge_punch: 95.6,
+  elbow_strike: 94.8,
   age_uke: 95.2,
+  soto_uke: 95.0,
   gedan_barai: 94.9,
   front_kick: 96.1,
   roundhouse_kick: 95.8,
   side_kick: 94.6,
   back_kick: 93.8,
   axe_kick: 94.3,
+  hook_kick: 93.5,
 };
 
 /**
@@ -140,11 +177,20 @@ function recognizeActionFromVideo(video: LocalVideoRecord): {
       return { actionType: act, confidence: ACTION_CONFIDENCE_MAP[act] };
     }
   }
-  if (name.includes('punch') || name.includes('正拳')) {
+  if (name.includes('lunge') || name.includes('oi') || name.includes('追擊') || name.includes('順拳')) {
+    return { actionType: 'lunge_punch', confidence: 95.6 };
+  }
+  if (name.includes('punch') || name.includes('正拳') || name.includes('逆突')) {
     return { actionType: 'straight_punch', confidence: 96.4 };
+  }
+  if (name.includes('elbow') || name.includes('empi') || name.includes('肘')) {
+    return { actionType: 'elbow_strike', confidence: 94.8 };
   }
   if (name.includes('age') || name.includes('上段')) {
     return { actionType: 'age_uke', confidence: 95.2 };
+  }
+  if (name.includes('soto') || name.includes('momtong') || name.includes('中段')) {
+    return { actionType: 'soto_uke', confidence: 95.0 };
   }
   if (name.includes('gedan') || name.includes('下段')) {
     return { actionType: 'gedan_barai', confidence: 94.9 };
@@ -152,16 +198,19 @@ function recognizeActionFromVideo(video: LocalVideoRecord): {
   if (name.includes('front') || name.includes('前踢')) {
     return { actionType: 'front_kick', confidence: 96.1 };
   }
-  if (name.includes('roundhouse') || name.includes('迴旋')) {
+  if (name.includes('roundhouse') || name.includes('迴旋') || name.includes('橫踢')) {
     return { actionType: 'roundhouse_kick', confidence: 95.8 };
   }
   if (name.includes('side') || name.includes('側踢')) {
     return { actionType: 'side_kick', confidence: 94.6 };
   }
+  if (name.includes('hook') || name.includes('huryeo') || name.includes('勾踢')) {
+    return { actionType: 'hook_kick', confidence: 93.5 };
+  }
   if (name.includes('back') || name.includes('後踢')) {
     return { actionType: 'back_kick', confidence: 93.8 };
   }
-  if (name.includes('axe') || name.includes('下壓')) {
+  if (name.includes('axe') || name.includes('下壓') || name.includes('下劈')) {
     return { actionType: 'axe_kick', confidence: 94.3 };
   }
 
@@ -188,7 +237,7 @@ export const mockAnalysisService: IAnalysisApiClient & {
     return {
       ok: true,
       latencyMs: 8,
-      message: '內建空手道／跆拳道 8 項標準動作識別與生物力學模擬引擎就緒 (v2.4)',
+      message: '內建空手道／跆拳道 12 項標準動作識別與生物力學模擬引擎就緒 (v2.5)',
     };
   },
 
@@ -487,13 +536,157 @@ export const mockAnalysisService: IAnalysisApiClient & {
         ];
         break;
 
+      case 'lunge_punch':
+        primaryJoint = 'right_elbow';
+        totalScore = 87;
+        grade = 'A';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「前屈立・追擊順拳 (Oi-Zuki / Bandae-Jireugi)」（信心度 ${confidence}%）。上步推進與同側腰轉出拳時序協調，惟在前屈立（Zenkutsu-Dachi / Ap-Kubi）定型瞬間前膝屈曲不足且後腳跟微幅掀起，出拳頂點（約 ${peakTime} 秒）手肘延伸差約 7 度。`;
+        strengths = [
+          '前屈立重心維持 60:40 分配，前腳膝蓋與腳尖方向一致未內扣',
+          '同側順拳水平出擊軌跡穩定，另一手引手（Hikite）確實收於腰側',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'right_elbow',
+            currentValue: 158,
+            standardRange: [165, 178],
+            message: '追擊出拳頂點手肘未完全伸展，且肩膀微幅上提影響拳面水平穿透。',
+            prescription:
+              '修正建議：利用後腳蹬地推進慣性帶動腰轉，擊中瞬間沉肩旋腕，使拳面水平延伸至肘角 168° 以上。',
+            severity: 'moderate',
+          },
+          {
+            id: `def-${Date.now()}-2`,
+            timestamp: recoveryTime,
+            jointName: 'left_knee',
+            currentValue: 138,
+            standardRange: [105, 125],
+            message: '前屈立定型時前膝彎曲度不足（重心偏高），削弱下盤推進穩定度。',
+            prescription:
+              '修正建議：上步落定時前膝向前屈曲至垂直對齊腳背上方（約 110°–120°），後腿打直且腳跟緊貼地面不離地。',
+            severity: 'minor',
+          },
+        ];
+        break;
+
+      case 'elbow_strike':
+        primaryJoint = 'right_elbow';
+        totalScore = 88;
+        grade = 'A';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「空手道・近身肘擊 (Empi-Uchi)」（信心度 ${confidence}%）。腰胯旋轉帶動肘尖橫向切入相當果斷，但在擊打頂點（約 ${peakTime} 秒）前臂摺疊未完全收緊（肘角 62°），略高於最佳結構剛性區間（35°–55°）。`;
+        strengths = [
+          '由腰胯核心旋轉帶動肩膀與肘尖出擊，非單靠手臂揮動',
+          '對側引手強力拉回腰際，與擊打肘形成良好雙向旋轉力偶',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'right_elbow',
+            currentValue: 62,
+            standardRange: [35, 55],
+            message: '肘擊瞬間前臂與上臂夾角偏大（未收緊），導致衝擊力分散且肘尖不夠突出。',
+            prescription:
+              '修正建議：出肘時將拳頭旋內貼近同側胸口或肋骨，把肘關節極限摺疊鎖緊於 45° 左右再以腰力撞擊。',
+            severity: 'moderate',
+          },
+          {
+            id: `def-${Date.now()}-2`,
+            timestamp: recoveryTime,
+            jointName: 'torso',
+            currentValue: 158,
+            standardRange: [165, 180],
+            message: '近距離出肘時上半身過度前傾，影響擊中後的距離控制與回防。',
+            prescription:
+              '修正建議：利用前屈立或騎馬立步法欺近目標距離，維持脊柱垂直旋轉而非彎腰前探。',
+            severity: 'minor',
+          },
+        ];
+        break;
+
+      case 'soto_uke':
+        primaryJoint = 'right_elbow';
+        totalScore = 87;
+        grade = 'A';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「中段外受格擋 (Soto-Uke / Momtong-Makgi)」（信心度 ${confidence}%）。前臂由外向內揮擺保護軀幹中線軌跡清晰，但在定型瞬間（約 ${peakTime} 秒）手肘伸展過直（116°），高於標準 90° 結構角（85°–105°）。`;
+        strengths = [
+          '由耳側向外再向內格擋的旋轉動量充足，有效撥開中段直線攻擊',
+          '格擋過程下盤與軀幹中軸穩定，未出現左右晃動',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'right_elbow',
+            currentValue: 116,
+            standardRange: [85, 105],
+            message: '格擋定型時手臂伸太直且位置偏前，削弱了背闊肌與胸大肌的結構支撐力。',
+            prescription:
+              '修正建議：定型瞬間手肘夾角維持約 90°、前臂接近垂直，拳高與肩同高且手肘距離肋骨約一拳寬度。',
+            severity: 'moderate',
+          },
+          {
+            id: `def-${Date.now()}-2`,
+            timestamp: recoveryTime,
+            jointName: 'hip',
+            currentValue: 145,
+            standardRange: [115, 138],
+            message: '格擋末端腰胯半身旋轉（Hanmi）幅度不足，僅靠手臂橫撥。',
+            prescription:
+              '修正建議：配合前臂旋內定型的最後一拍，同步將骨盆微幅旋向內側以疊加全身剛性。',
+            severity: 'minor',
+          },
+        ];
+        break;
+
+      case 'hook_kick':
+        primaryJoint = 'right_knee';
+        totalScore = 84;
+        grade = 'B';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「跆拳道・勾踢 (Huryeo-Chagi / Ura-Mawashi-Geri)」（信心度 ${confidence}%）。前段側向展髖伸直軌跡明確，但在由伸直轉為屈膝勾回的關鍵瞬間（約 ${peakTime} 秒）膕旁肌收縮速度偏慢（膝角 136°），使勾打鞭甩感略顯斷裂。`;
+        strengths = [
+          '第一階段側向提膝與展髖角度充分，成功製造假動作空間',
+          '支撐腳前腳掌旋轉穩定，勾擊過程未出現大幅後仰失衡',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'right_knee',
+            currentValue: 136,
+            standardRange: [95, 125],
+            message: '勾擊瞬間屈膝勾回幅度與速度不足，變成整條直腿橫掃，力量分散。',
+            prescription:
+              '修正建議：在腿部於目標側面伸展至約 165° 後，立即啟動大腿後側膕旁肌（Hamstrings）爆發屈膝至 105° 左右，以腳跟或腳掌快速鞭勾目標。',
+            severity: 'moderate',
+          },
+          {
+            id: `def-${Date.now()}-2`,
+            timestamp: recoveryTime,
+            jointName: 'torso',
+            currentValue: 155,
+            standardRange: [165, 180],
+            message: '勾踢結束落步時上身略微側傾，回收回防速度偏慢。',
+            prescription:
+              '修正建議：勾擊完成後順勢將小腿收摺於臀部前方再落步，同時收緊腹斜肌維持實戰準備姿勢。',
+            severity: 'minor',
+          },
+        ];
+        break;
+
       case 'axe_kick':
       default:
         primaryJoint = 'right_knee';
         totalScore = 84;
         grade = 'B';
         feedbackSummary =
-          `系統經資料庫特徵比對識別為「跆拳道・下壓踢 (Naeryeo-Chagi)」（信心度 ${confidence}%）。起腿越過頭頂高度優異，但在由最高點向下劈落瞬間（約 ${peakTime} 秒）膝關節微彎（156°），且軀幹有後仰代償現象，建議強化膕旁肌動態柔韌度與核心穩定。`;
+          `系統經資料庫特徵比對識別為「跆拳道・下劈 (Naeryeo-Chagi / Kakato-Otoshi)」（信心度 ${confidence}%）。起腿越過頭頂高度優異，但在由最高點向下劈落瞬間（約 ${peakTime} 秒）膝關節微彎（156°），且軀幹有後仰代償現象，建議強化膕旁肌動態柔韌度與核心穩定。`;
         strengths = [
           '最高點抬腿超越頭部高度，由內向外擺上軌跡流暢無卡頓',
           '下劈角速度峰值突出，具備強大垂直下壓動量',
@@ -542,7 +735,10 @@ export const mockAnalysisService: IAnalysisApiClient & {
 
       const isUpper =
         actionType === 'straight_punch' ||
+        actionType === 'lunge_punch' ||
+        actionType === 'elbow_strike' ||
         actionType === 'age_uke' ||
+        actionType === 'soto_uke' ||
         actionType === 'gedan_barai';
 
       const rightElbowX = isUpper
@@ -552,7 +748,9 @@ export const mockAnalysisService: IAnalysisApiClient & {
         ? clamp01((152 - wave * 14) / 360)
         : clamp01(162 / 360);
       const rightWristX = isUpper
-        ? clamp01((290 + 58 + wave * 106) / 640)
+        ? actionType === 'elbow_strike'
+          ? clamp01((290 + 18 + wave * 12) / 640)
+          : clamp01((290 + 58 + wave * 106) / 640)
         : clamp01((290 + 36) / 640);
       const rightWristY = isUpper ? clamp01(138 / 360) : clamp01(148 / 360);
 
@@ -591,7 +789,7 @@ export const mockAnalysisService: IAnalysisApiClient & {
       analysisId: `ana-${videoId}`,
       videoId,
       source: 'mock' as const,
-      modelVersion: 'mock-biomechanics-v2.4',
+      modelVersion: 'mock-biomechanics-v2.5',
       fps: 30,
       actionType,
       confidence,
@@ -735,12 +933,15 @@ export const mockAnalysisService: IAnalysisApiClient & {
 
         if (
           simulatedAction === 'straight_punch' ||
+          simulatedAction === 'lunge_punch' ||
+          simulatedAction === 'elbow_strike' ||
           simulatedAction === 'age_uke' ||
+          simulatedAction === 'soto_uke' ||
           simulatedAction === 'gedan_barai'
         ) {
-          if (simulatedAction === 'age_uke') {
+          if (simulatedAction === 'age_uke' || simulatedAction === 'soto_uke') {
             jointX = centerX + 26 + wave * 24;
-            jointY = 148 - wave * 52;
+            jointY = 148 - wave * (simulatedAction === 'age_uke' ? 52 : 24);
             const wristX = jointX - 8 + wave * 22;
             const wristY = jointY - 22 - wave * 20;
             ctx.beginPath();
@@ -753,6 +954,16 @@ export const mockAnalysisService: IAnalysisApiClient & {
             jointY = 136 + wave * 34;
             const wristX = jointX + 18 + wave * 42;
             const wristY = jointY + 16 + wave * 38;
+            ctx.beginPath();
+            ctx.moveTo(centerX, 132);
+            ctx.lineTo(jointX, jointY);
+            ctx.lineTo(wristX, wristY);
+            ctx.stroke();
+          } else if (simulatedAction === 'elbow_strike') {
+            jointX = centerX + 28 + wave * 46;
+            jointY = 142 - wave * 10;
+            const wristX = centerX + 16 + wave * 14;
+            const wristY = 136;
             ctx.beginPath();
             ctx.moveTo(centerX, 132);
             ctx.lineTo(jointX, jointY);
