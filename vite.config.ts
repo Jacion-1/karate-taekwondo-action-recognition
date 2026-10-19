@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // GitHub Pages 部署於 https://jacion-1.github.io/karate-taekwondo-action-recognition/
+  // 僅在 build 時套用子路徑，開發模式 (npm run dev) 維持 '/'
+  base: command === 'build' ? '/karate-taekwondo-action-recognition/' : '/',
   plugins: [react()],
   build: {
     rollupOptions: {
@@ -33,5 +36,5 @@ export default defineConfig({
       },
     },
   },
-});
+}));
 
