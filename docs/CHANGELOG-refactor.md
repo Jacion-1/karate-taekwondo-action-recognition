@@ -42,4 +42,17 @@
 - `RecordWorkspace.tsx`：新增匯入限制常數 `MAX_IMPORT_SIZE_MB = 200`（200 MB）與 `MAX_IMPORT_DURATION_SEC = 60`（60 秒），超限時顯示明確錯誤 Toast；卸載時清理 3 秒倒數計時器。
 - 儲存空間管理：於 `App.tsx` 啟動時呼叫 `navigator.storage.persist()`（忽略失敗），並於 `VideoVault.tsx` 標題旁顯示 `navigator.storage.estimate()` 本機儲存空間用量與配額百分比。
 
+---
+
+## Phase 5：播放同步與疊加層
+- 播放時間同步：於 `AnalysisDashboard.tsx` 以 `requestVideoFrameCallback` 同步 `currentTime`（不支援時自動退回 `requestAnimationFrame`），取代原本 4Hz 的 `onTimeUpdate`。
+- 圖表零重繪最佳化：將 `JointAngleChart.tsx` 拆分為 `StaticRechartsLayer`（`React.memo`，僅依賴 `chartData`、`jointDefects`、`onSeekToTime`，完全不依賴 `currentTime`）與輕量 `PlayheadCursor` 獨立游標元件，播放期間 Recharts 曲線與面積圖零重繪。
+- 真實影格率逐幀步進：優先取 `requestVideoFrameCallback` 實測之影格率或契約 `analysis.fps`，皆無時預設 `30fps`，步進量固定為 `1/fps` 秒，並同步更新 `README.md` 說明。
+- 移除寫死的假 SVG 路徑（`M 164 92 L 188 76 L 222 62`），改為 [`PoseCanvasOverlay.tsx`](../src/features/analysis/components/PoseCanvasOverlay.tsx)：
+  - 透過 `computeContainedVideoRect` 與 `ResizeObserver` 對齊 `<video class="object-contain">` 實際顯示區域（扣除黑邊），包含 `9:16` 手機直式影片亦可精準對齊。
+  - 有 `frames` 時繪製骨架、所選關節夾角扇形量角器與角度標籤，不合規時以紅色虛線圓環與紅線高亮。
+  - **當沒有 `frames` 時完全不渲染疊加層，並隱藏左上角「角度標記」開關按鈕**。
+- HUD 時序點匹配：`currentPointHud` 直接以 `currentTime` 比對最近時序點，移除原本先 `toFixed(1)` 四捨五入的失真作法。
+
+
 

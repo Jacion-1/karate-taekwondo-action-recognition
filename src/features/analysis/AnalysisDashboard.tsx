@@ -24,6 +24,7 @@ import { computeBiomechanicsMetrics } from '../../services/apiClient.interface';
 import { useObjectUrl } from '../../shared/hooks/useObjectUrl';
 import { JointAngleChart } from './components/charts/JointAngleChart';
 import { DefectTimelineList } from './components/defects/DefectTimelineList';
+import { PoseCanvasOverlay } from './components/PoseCanvasOverlay';
 import { useToast } from '../../shared/components/ToastContainer';
 
 interface AnalysisDashboardProps {
@@ -32,6 +33,16 @@ interface AnalysisDashboardProps {
   onBack: () => void;
   onReverifyAction?: (actionType: ActionType) => void;
 }
+
+type VideoWithRVFC = HTMLVideoElement & {
+  requestVideoFrameCallback?: (
+    callback: (
+      now: number,
+      metadata: { mediaTime: number; presentedFrames: number }
+    ) => void
+  ) => number;
+  cancelVideoFrameCallback?: (handle: number) => void;
+};
 
 /**
  * 視覺化分析報告儀表板 (Kinovea + JAB AI + Sensei AI + Uplift Labs)
@@ -52,6 +63,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   const [reloadTrigger, setReloadTrigger] = useState<number>(0);
   const [selectedJoint, setSelectedJoint] = useState<JointName>('right_elbow');
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const [detectedFps, setDetectedFps] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
   const [showKinoveaOverlay, setShowKinoveaOverlay] = useState<boolean>(true);
@@ -63,6 +75,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
     let mounted = true;
     setLoadState('loading');
     setLoadErrorMessage('');
+    setDetectedFps(null);
 
     Promise.all([
       videoId ? videoRepository.getVideoById(videoId) : Promise.resolve(undefined),
@@ -96,6 +109,76 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
     };
   }, [videoId, analysisId, reloadTrigger]);
 
+  // Phase 5.1: 以 requestVideoFrameCallback 同步 currentTime（不支援時退回 requestAnimationFrame）
+  useEffect(() => {
+    const videoEl = videoRef.current as VideoWithRVFC | null;
+    if (!videoEl || !videoUrl) return;
+
+    let rvfcId: number | null = null;
+    let rafId: number | null = null;
+    let lastMediaTime: number | null = null;
+    let lastFrames: number | null = null;
+    let cancelled = false;
+
+    if (typeof videoEl.requestVideoFrameCallback === 'function') {
+      const onVideoFrame = (
+        _now: number,
+        metadata: { mediaTime: number; presentedFrames: number }
+      ) => {
+        if (cancelled) return;
+        setCurrentTime(metadata.mediaTime);
+
+        if (
+          lastMediaTime !== null &&
+          lastFrames !== null &&
+          metadata.mediaTime > lastMediaTime &&
+          metadata.presentedFrames > lastFrames
+        ) {
+          const dt = metadata.mediaTime - lastMediaTime;
+          const df = metadata.presentedFrames - lastFrames;
+          const instantFps = Math.round(df / dt);
+          if (instantFps >= 12 && instantFps <= 120) {
+            setDetectedFps((prev) => prev ?? instantFps);
+          }
+        }
+        lastMediaTime = metadata.mediaTime;
+        lastFrames = metadata.presentedFrames;
+
+        if (!cancelled && typeof videoEl.requestVideoFrameCallback === 'function') {
+          rvfcId = videoEl.requestVideoFrameCallback(onVideoFrame);
+        }
+      };
+
+      rvfcId = videoEl.requestVideoFrameCallback(onVideoFrame);
+      return () => {
+        cancelled = true;
+        if (rvfcId !== null && typeof videoEl.cancelVideoFrameCallback === 'function') {
+          videoEl.cancelVideoFrameCallback(rvfcId);
+        }
+      };
+    }
+
+    const onAnimationFrame = () => {
+      if (cancelled) return;
+      if (!videoEl.paused) {
+        setCurrentTime(videoEl.currentTime);
+      }
+      rafId = requestAnimationFrame(onAnimationFrame);
+    };
+    rafId = requestAnimationFrame(onAnimationFrame);
+
+    return () => {
+      cancelled = true;
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [videoUrl, loadState]);
+
+  // 優先取 rVFC 回報的 metadata 或契約中的 fps，兩者都沒有才假設 30
+  const effectiveFps = detectedFps ?? analysis?.fps ?? 30;
+  const frameStepSeconds = 1 / effectiveFps;
+
   const handleSeekToTime = useCallback((seconds: number) => {
     const videoEl = videoRef.current;
     if (videoEl) {
@@ -106,19 +189,25 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   }, []);
 
   const handleStepFrame = useCallback(
-    (deltaSeconds: number) => {
+    (frameDirection: -1 | 1) => {
       const videoEl = videoRef.current;
       if (!videoEl) return;
       videoEl.pause();
-      const maxDur = videoEl.duration || analysis?.duration || 3.2;
+      const maxDur =
+        (Number.isFinite(videoEl.duration) && videoEl.duration > 0
+          ? videoEl.duration
+          : undefined) ||
+        analysis?.duration ||
+        3.2;
+      const step = 1 / effectiveFps;
       const nextTime = Math.max(
         0,
-        Math.min(maxDur, Number((videoEl.currentTime + deltaSeconds).toFixed(2)))
+        Math.min(maxDur, Number((videoEl.currentTime + frameDirection * step).toFixed(4)))
       );
       videoEl.currentTime = nextTime;
       setCurrentTime(nextTime);
     },
-    [analysis?.duration]
+    [analysis?.duration, effectiveFps]
   );
 
   const handleTogglePlay = useCallback(() => {
@@ -149,20 +238,23 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         handleTogglePlay();
       } else if (e.code === 'ArrowLeft') {
         e.preventDefault();
-        handleStepFrame(-0.1);
+        handleStepFrame(-1);
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
-        handleStepFrame(0.1);
+        handleStepFrame(1);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleTogglePlay, handleStepFrame]);
 
-  const handleSelectDefect = (timestamp: number, jointName: JointName) => {
-    setSelectedJoint(jointName);
-    handleSeekToTime(timestamp);
-  };
+  const handleSelectDefect = useCallback(
+    (timestamp: number, jointName: JointName) => {
+      setSelectedJoint(jointName);
+      handleSeekToTime(timestamp);
+    },
+    [handleSeekToTime]
+  );
 
   const handleChangeSpeed = (rate: number) => {
     setPlaybackRate(rate);
@@ -193,13 +285,15 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
     [analysis]
   );
 
+  // Phase 5.5: 圖表的 HUD 直接以 currentTime 取最近的時序點，不先以 toFixed(1) 四捨五入
   const currentPointHud = useMemo(() => {
     const activeSeries =
       seriesList.find((s) => s.jointName === selectedJoint) ?? seriesList[0];
     if (!activeSeries || activeSeries.points.length === 0) return null;
-    const snapped = Number(currentTime.toFixed(1));
     const closest = activeSeries.points.reduce((prev, curr) =>
-      Math.abs(curr.time - snapped) < Math.abs(prev.time - snapped) ? curr : prev
+      Math.abs(curr.time - currentTime) < Math.abs(prev.time - currentTime)
+        ? curr
+        : prev
     );
     const isCompliant =
       closest.actualAngle >= closest.standardMin &&
@@ -408,9 +502,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   ref={videoRef}
                   src={videoUrl}
                   playsInline
-                  onTimeUpdate={(e) =>
-                    setCurrentTime(e.currentTarget.currentTime)
-                  }
+                  onSeeked={(e) => setCurrentTime(e.currentTarget.currentTime)}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                   onEnded={() => setIsPlaying(false)}
@@ -420,57 +512,40 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 <div className="text-xs text-zinc-500">載入影片中...</div>
               )}
 
-              {/* 左上角：Kinovea 視覺量角器疊加開關 */}
-              <button
-                type="button"
-                onClick={() => setShowKinoveaOverlay((prev) => !prev)}
-                className={`absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium backdrop-blur-md transition ${
-                  showKinoveaOverlay
-                    ? 'bg-zinc-950/85 border-white/20 text-zinc-100'
-                    : 'bg-zinc-950/60 border-white/[0.06] text-zinc-500'
-                }`}
-              >
-                <Eye className="w-3 h-3" />
-                <span>角度標記 {showKinoveaOverlay ? '開' : '關'}</span>
-              </button>
-
-              {/* Kinovea 風格關節量角器與錯誤高亮 SVG 疊加層 */}
-              {showKinoveaOverlay && currentPointHud && (
-                <svg
-                  viewBox="0 0 320 180"
-                  className="pointer-events-none absolute inset-0 w-full h-full"
+              {/* 左上角：Kinovea 視覺量角器疊加開關 — 僅在有 frames (keypoints) 時顯示 */}
+              {analysis.frames && analysis.frames.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowKinoveaOverlay((prev) => !prev)}
+                  className={`absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium backdrop-blur-md transition ${
+                    showKinoveaOverlay
+                      ? 'bg-zinc-950/85 border-white/20 text-zinc-100'
+                      : 'bg-zinc-950/60 border-white/[0.06] text-zinc-500'
+                  }`}
                 >
-                  {/* 動態關節角度扇形與錯誤高亮圓環 */}
-                  {!currentPointHud.isCompliant && (
-                    <circle
-                      cx="188"
-                      cy="76"
-                      r="22"
-                      fill="rgba(244, 63, 94, 0.14)"
-                      stroke="#f43f5e"
-                      strokeWidth="1.25"
-                      strokeDasharray="3 2"
-                    />
-                  )}
-                  <path
-                    d="M 164 92 L 188 76 L 222 62"
-                    fill="none"
-                    stroke={currentPointHud.isCompliant ? '#10b981' : '#f43f5e'}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <circle
-                    cx="188"
-                    cy="76"
-                    r="3.5"
-                    fill={currentPointHud.isCompliant ? '#10b981' : '#f43f5e'}
-                  />
-                </svg>
+                  <Eye className="w-3 h-3" />
+                  <span>角度標記 {showKinoveaOverlay ? '開' : '關'}</span>
+                </button>
               )}
+
+              {/* Kinovea 風格骨架與關節量角器 Canvas 疊加層（對齊實際影片畫面，無 frames 時完全不顯示） */}
+              {showKinoveaOverlay &&
+                analysis.frames &&
+                analysis.frames.length > 0 &&
+                currentPointHud && (
+                  <PoseCanvasOverlay
+                    videoRef={videoRef}
+                    frames={analysis.frames}
+                    currentTime={currentTime}
+                    selectedJoint={selectedJoint}
+                    actualAngle={currentPointHud.actualAngle}
+                    isCompliant={currentPointHud.isCompliant}
+                  />
+                )}
 
               {/* 左下角：Kinovea 即時關節角度與偏差狀態 HUD */}
               {currentPointHud && (
-                <div className="pointer-events-none absolute bottom-3 left-3 px-3 py-1.5 rounded-xl bg-zinc-950/85 border border-white/[0.08] backdrop-blur-md font-mono text-xs flex items-center gap-2">
+                <div className="pointer-events-none absolute bottom-3 left-3 z-10 px-3 py-1.5 rounded-xl bg-zinc-950/85 border border-white/[0.08] backdrop-blur-md font-mono text-xs flex items-center gap-2">
                   <span className="text-zinc-300">
                     {currentPointHud.jointLabel}
                   </span>
@@ -492,7 +567,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
               )}
 
               {/* 右上角時間點 */}
-              <div className="pointer-events-none absolute top-3 right-3 px-2.5 py-1 rounded-md bg-zinc-950/80 font-mono text-[11px] text-zinc-300 tabular-nums">
+              <div className="pointer-events-none absolute top-3 right-3 z-10 px-2.5 py-1 rounded-md bg-zinc-950/80 font-mono text-[11px] text-zinc-300 tabular-nums">
                 {currentTime.toFixed(2)}s
                 {displayDuration > 0 ? ` / ${displayDuration.toFixed(1)}s` : ''}
               </div>
@@ -551,17 +626,17 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => handleStepFrame(-0.1)}
+                  onClick={() => handleStepFrame(-1)}
                   className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-300 transition"
-                  title="倒退 0.1 秒 (←)"
+                  title={`上一幀 (-${frameStepSeconds.toFixed(3)}s @ ${effectiveFps}fps, ←)`}
                 >
                   <StepBack className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleStepFrame(0.1)}
+                  onClick={() => handleStepFrame(1)}
                   className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-300 transition"
-                  title="前進 0.1 秒 (→)"
+                  title={`下一幀 (+${frameStepSeconds.toFixed(3)}s @ ${effectiveFps}fps, →)`}
                 >
                   <StepForward className="w-4 h-4" />
                 </button>

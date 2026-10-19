@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   ComposedChart,
   Line,
@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
   ReferenceDot,
 } from 'recharts';
 import {
@@ -27,6 +26,158 @@ interface JointAngleChartProps {
   defects: DefectItem[];
   onSeekToTime: (seconds: number) => void;
 }
+
+const TOOLTIP_CONTENT_STYLE: React.CSSProperties = {
+  backgroundColor: '#18181b',
+  borderColor: 'rgba(255,255,255,0.08)',
+  borderRadius: '0.75rem',
+  fontSize: '12px',
+  color: '#f4f4f5',
+};
+
+const CHART_MARGIN = { top: 8, right: 12, left: 0, bottom: 0 };
+const Y_AXIS_WIDTH = 44;
+
+interface StaticRechartsLayerProps {
+  chartData: AngleTimeSeriesPoint[];
+  jointDefects: DefectItem[];
+  onSeekToTime: (seconds: number) => void;
+}
+
+/**
+ * 靜態圖表資料層：僅在切換關節、時序資料或瑕疵清單變動時重繪，
+ * 播放期間 currentTime 以 60fps 更新時此組件完全不重繪。
+ */
+const StaticRechartsLayer: React.FC<StaticRechartsLayerProps> = React.memo(
+  ({ chartData, jointDefects, onSeekToTime }) => {
+    const handleChartClick = useCallback(
+      (state: { activeLabel?: string | number } | null | undefined) => {
+        if (state && state.activeLabel !== undefined) {
+          const clickedTime = Number(state.activeLabel);
+          if (!Number.isNaN(clickedTime)) {
+            onSeekToTime(clickedTime);
+          }
+        }
+      },
+      [onSeekToTime]
+    );
+
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart
+          data={chartData}
+          margin={CHART_MARGIN}
+          onClick={handleChartClick}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="rgba(255,255,255,0.04)"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="time"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            stroke="#52525b"
+            tick={{ fill: '#71717a', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            unit="s"
+          />
+          <YAxis
+            width={Y_AXIS_WIDTH}
+            domain={[40, 190]}
+            stroke="#52525b"
+            tick={{ fill: '#71717a', fontSize: 11 }}
+            tickLine={false}
+            axisLine={false}
+            unit="°"
+          />
+          <Tooltip
+            contentStyle={TOOLTIP_CONTENT_STYLE}
+            labelFormatter={(label) => `${label}s`}
+          />
+
+          {/* 標準容許範圍 [standardMin, standardMax] */}
+          <Area
+            type="monotone"
+            dataKey="standardBand"
+            name="標準範圍"
+            fill="#10b981"
+            fillOpacity={0.14}
+            stroke="#10b981"
+            strokeOpacity={0.35}
+            strokeDasharray="3 3"
+            isAnimationActive={false}
+          />
+
+          {/* 學員實測角度曲線（使用高對比純白線條，極簡俐落） */}
+          <Line
+            type="monotone"
+            dataKey="actualAngle"
+            name="實測角度"
+            stroke="#ffffff"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: '#ffffff' }}
+            isAnimationActive={false}
+          />
+
+          {/* 瑕疵點 */}
+          {jointDefects.map((defect) => (
+            <ReferenceDot
+              key={defect.id}
+              x={Number(defect.timestamp.toFixed(1))}
+              y={defect.currentValue}
+              r={5}
+              fill="#f43f5e"
+              stroke="#09090b"
+              strokeWidth={2}
+            />
+          ))}
+        </ComposedChart>
+      </ResponsiveContainer>
+    );
+  }
+);
+StaticRechartsLayer.displayName = 'StaticRechartsLayer';
+
+interface PlayheadCursorProps {
+  currentTime: number;
+  minTime: number;
+  maxTime: number;
+}
+
+/**
+ * 獨立輕量時間游標小元件：承載高頻 currentTime 更新，避免觸發 Recharts SVG 重新計算。
+ */
+const PlayheadCursor: React.FC<PlayheadCursorProps> = React.memo(
+  ({ currentTime, minTime, maxTime }) => {
+    const span = Math.max(0.1, maxTime - minTime);
+    const ratio = Math.max(0, Math.min(1, (currentTime - minTime) / span));
+    const percent = ratio * 100;
+
+    return (
+      <div
+        className="pointer-events-none absolute top-2 bottom-7"
+        style={{
+          left: `${Y_AXIS_WIDTH}px`,
+          right: `${CHART_MARGIN.right}px`,
+        }}
+      >
+        <div
+          className="absolute top-0 bottom-0 border-l border-dashed border-zinc-400/80"
+          style={{ left: `${percent}%` }}
+        >
+          <span className="absolute top-0.5 left-1 px-1 py-0.5 rounded bg-zinc-950/90 text-[10px] font-mono text-zinc-300 tabular-nums whitespace-nowrap">
+            {currentTime.toFixed(2)}s
+          </span>
+        </div>
+      </div>
+    );
+  }
+);
+PlayheadCursor.displayName = 'PlayheadCursor';
 
 /**
  * 時序關節角度圖表 (Modern Minimalism)
@@ -59,7 +210,13 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
       [defects, activeSeries]
     );
 
-    const snappedTime = Number(currentTime.toFixed(1));
+    const { minTime, maxTime } = useMemo(() => {
+      if (chartData.length === 0) return { minTime: 0, maxTime: 3.2 };
+      return {
+        minTime: chartData[0].time,
+        maxTime: chartData[chartData.length - 1].time,
+      };
+    }, [chartData]);
 
     return (
       <div className="lab-card p-6 space-y-5">
@@ -111,105 +268,17 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
           </span>
         </div>
 
-        <div className="h-64 w-full select-none">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={chartData}
-              margin={{ top: 8, right: 12, left: -12, bottom: 0 }}
-              onClick={(state) => {
-                if (state && state.activeLabel !== undefined) {
-                  const clickedTime = Number(state.activeLabel);
-                  if (!Number.isNaN(clickedTime)) {
-                    onSeekToTime(clickedTime);
-                  }
-                }
-              }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.04)"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="time"
-                stroke="#52525b"
-                tick={{ fill: '#71717a', fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                unit="s"
-              />
-              <YAxis
-                domain={[40, 190]}
-                stroke="#52525b"
-                tick={{ fill: '#71717a', fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                unit="°"
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#18181b',
-                  borderColor: 'rgba(255,255,255,0.08)',
-                  borderRadius: '0.75rem',
-                  fontSize: '12px',
-                  color: '#f4f4f5',
-                }}
-                labelFormatter={(label) => `${label}s`}
-              />
-
-              {/* 標準容許範圍 [standardMin, standardMax] */}
-              <Area
-                type="monotone"
-                dataKey="standardBand"
-                name="標準範圍"
-                fill="#10b981"
-                fillOpacity={0.14}
-                stroke="#10b981"
-                strokeOpacity={0.35}
-                strokeDasharray="3 3"
-                isAnimationActive={false}
-              />
-
-              {/* 學員實測角度曲線（使用高對比純白線條，極簡俐落） */}
-              <Line
-                type="monotone"
-                dataKey="actualAngle"
-                name="實測角度"
-                stroke="#ffffff"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, fill: '#ffffff' }}
-                isAnimationActive={false}
-              />
-
-              {/* 動態時間同步指針 */}
-              <ReferenceLine
-                x={snappedTime}
-                stroke="#a1a1aa"
-                strokeWidth={1.5}
-                strokeDasharray="2 2"
-                label={{
-                  value: `${snappedTime}s`,
-                  position: 'insideTopRight',
-                  fill: '#d4d4d8',
-                  fontSize: 11,
-                }}
-              />
-
-              {/* 瑕疵點 */}
-              {jointDefects.map((defect) => (
-                <ReferenceDot
-                  key={defect.id}
-                  x={Number(defect.timestamp.toFixed(1))}
-                  y={defect.currentValue}
-                  r={5}
-                  fill="#f43f5e"
-                  stroke="#09090b"
-                  strokeWidth={2}
-                />
-              ))}
-            </ComposedChart>
-          </ResponsiveContainer>
+        <div className="relative h-64 w-full select-none">
+          <StaticRechartsLayer
+            chartData={chartData}
+            jointDefects={jointDefects}
+            onSeekToTime={onSeekToTime}
+          />
+          <PlayheadCursor
+            currentTime={currentTime}
+            minTime={minTime}
+            maxTime={maxTime}
+          />
         </div>
       </div>
     );
@@ -217,3 +286,4 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
 );
 
 JointAngleChart.displayName = 'JointAngleChart';
+
