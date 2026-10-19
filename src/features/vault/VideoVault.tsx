@@ -63,12 +63,14 @@ const SOURCE_LABEL = {
 
 const VideoVaultItemCard: React.FC<{
   record: LocalVideoRecord;
+  analysisSource?: 'mock' | 'backend';
   canAnalyze: boolean;
   onUploadAndAnalyze: (record: LocalVideoRecord) => void;
   onDelete: (id: string) => void;
   onOpenAnalysis: (videoId: string, analysisId: string) => void;
 }> = ({
   record,
+  analysisSource,
   canAnalyze,
   onUploadAndAnalyze,
   onDelete,
@@ -150,6 +152,17 @@ const VideoVaultItemCard: React.FC<{
                 <span className="text-xs text-zinc-500">
                   {recognizedMeta.martialArt}
                 </span>
+                {analysisSource && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                      analysisSource === 'mock'
+                        ? 'bg-amber-500/15 text-amber-300 border border-amber-400/30'
+                        : 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/30'
+                    }`}
+                  >
+                    {analysisSource === 'mock' ? '模擬資料' : '實機後端'}
+                  </span>
+                )}
                 {requestedMeta && (
                   <span className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono text-zinc-400">
                     鎖定：{requestedMeta.shortLabel}
@@ -298,6 +311,18 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
     () => db.videos.orderBy('createdAt').reverse().toArray(),
     []
   );
+
+  const analyses = useLiveQuery(() => db.analyses.toArray(), []);
+
+  const analysisSourceById = useMemo(() => {
+    const map = new Map<string, 'mock' | 'backend'>();
+    if (analyses) {
+      for (const a of analyses) {
+        map.set(a.analysisId, a.source);
+      }
+    }
+    return map;
+  }, [analyses]);
 
   useEffect(() => {
     let active = true;
@@ -596,6 +621,11 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
             <VideoVaultItemCard
               key={record.id}
               record={record}
+              analysisSource={
+                record.analysisId
+                  ? analysisSourceById.get(record.analysisId)
+                  : undefined
+              }
               canAnalyze={canAnalyze}
               onUploadAndAnalyze={handleUploadAndAnalyze}
               onDelete={async (id) => {

@@ -54,5 +54,14 @@
   - **當沒有 `frames` 時完全不渲染疊加層，並隱藏左上角「角度標記」開關按鈕**。
 - HUD 時序點匹配：`currentPointHud` 直接以 `currentTime` 比對最近時序點，移除原本先 `toFixed(1)` 四捨五入的失真作法。
 
+---
+
+## Phase 6：誠實呈現（Mock 標示、指標與出處）
+- 模擬資料明確標示：當 `analysis.source === 'mock'` 時，`AnalysisDashboard.tsx` 頂部固定顯示醒目橫幅「模擬資料（非真實辨識結果）」；`VideoVault.tsx` 卡片與匯出之 JSON 亦完整標記 `source`（`mock` / `backend`）。
+- 移除推算指標：`computeBiomechanicsMetrics` 保留由時序點實測計算的 `complianceRate` 與 `peakDeviationDeg`，移除原本以 `totalScore` 加減固定值推算的 `stabilityScore` 與 `explosivenessScore`；穩定度與爆發力僅在後端實際回傳 `analysis.metrics` 時透傳並顯示，否則自動隱藏。
+- 閾值出處透明化：`ACTION_METADATA` 每一項動作新增 `provenance: { status: 'heuristic-unverified' | 'cited'; citation?: string }`，現階段全部設為 `'heuristic-unverified'` 並加註 `// TODO(使用者): 填入實際文獻或教練驗證來源`；動作圖譜卡片與報告頁皆標示「初始經驗閾值，待驗證」，並同步修正 `README.md` 描述。
+- 拍攝視角通則提示：`RecordWorkspace.tsx` 依當前選擇之動作（或自動模式）顯示建議拍攝視角提示（如踢擊類建議側面拍攝、全身入鏡），並明確註明「單鏡頭 2D 角度會隨拍攝方向變形」。
+
+
 
 

@@ -412,6 +412,21 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
           </div>
         </div>
 
+        {/* Phase 6.4: 依動作顯示建議拍攝視角提示文字，並註明單鏡頭 2D 透視變形限制 */}
+        <div className="px-4 py-3 rounded-2xl bg-zinc-900/45 border border-white/[0.06] text-xs text-zinc-400 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span className="font-medium text-zinc-300">建議拍攝視角：</span>
+            <span>
+              {recognitionMode === 'auto'
+                ? '踢擊類與直線出拳建議側面拍攝、格擋類建議斜側 45°–90° 拍攝，並保持全身完整入鏡。'
+                : ACTION_METADATA[recognitionMode].cameraViewHint}
+            </span>
+          </div>
+          <span className="text-[11px] font-mono text-amber-300/90 shrink-0">
+            注意：單鏡頭 2D 角度會隨拍攝方向變形
+          </span>
+        </div>
+
         {/* Sensei AI 閉環教練捷徑條：拍攝/匯入後可一鍵直接識別分析 */}
         {recentSavedId && (
           <div className="px-5 py-3.5 rounded-2xl bg-zinc-900/95 border border-white/[0.12] flex flex-wrap items-center justify-between gap-4">
@@ -578,6 +593,13 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                         <span>{meta.targetAngleHint}</span>
                         <span>
                           關鍵：{meta.primaryJoints.map((j) => JOINT_LABELS[j]).join(' · ')}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 pl-3.5 flex items-center justify-between gap-2 text-[10px] text-zinc-500">
+                        <span>
+                          {meta.provenance.status === 'cited' && meta.provenance.citation
+                            ? `閾值來源：${meta.provenance.citation}`
+                            : '初始經驗閾值，待驗證'}
                         </span>
                       </div>
                     </button>

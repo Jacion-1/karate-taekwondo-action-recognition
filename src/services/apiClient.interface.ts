@@ -114,18 +114,22 @@ export function validateAnalysisResponse(
 }
 
 /**
- * 根據時序點與瑕疵列表，計算運動生物力學細項指標
+ * 根據時序點實際計算標準角度達成率 (complianceRate) 與最大角度偏差 (peakDeviationDeg)。
+ * 穩定度與爆發力僅在後端回傳 analysis.metrics 時原樣透傳，前端絕不以 totalScore 加減常數推算。
  */
 export function computeBiomechanicsMetrics(
   analysis: ActionAnalysisResponse
 ): BiomechanicsSubMetrics {
   const points = analysis.angleTimeSeries?.points ?? [];
+  const stabilityScore = analysis.metrics?.stability;
+  const explosivenessScore = analysis.metrics?.explosiveness;
+
   if (points.length === 0) {
     return {
       complianceRate: 0,
-      stabilityScore: Math.max(50, analysis.totalScore - 5),
-      explosivenessScore: analysis.totalScore,
       peakDeviationDeg: 0,
+      stabilityScore,
+      explosivenessScore,
     };
   }
 
@@ -147,22 +151,11 @@ export function computeBiomechanicsMetrics(
   }
 
   const complianceRate = Math.round((compliantCount / points.length) * 100);
-  const torsoDefects = analysis.defects.filter(
-    (d) => d.jointName === 'torso' || d.jointName === 'hip'
-  ).length;
-  const stabilityScore = Math.max(
-    55,
-    Math.min(99, Math.round(analysis.totalScore + 4 - torsoDefects * 6))
-  );
-  const explosivenessScore = Math.max(
-    50,
-    Math.min(99, Math.round((analysis.totalScore + complianceRate) / 2))
-  );
 
   return {
     complianceRate,
+    peakDeviationDeg: Math.round(maxDeviation * 10) / 10,
     stabilityScore,
     explosivenessScore,
-    peakDeviationDeg: Math.round(maxDeviation * 10) / 10,
   };
 }

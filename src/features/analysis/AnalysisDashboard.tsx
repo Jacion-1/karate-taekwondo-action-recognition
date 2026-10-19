@@ -265,7 +265,11 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
   const handleExportJson = () => {
     if (!analysis) return;
-    const jsonBlob = new Blob([JSON.stringify(analysis, null, 2)], {
+    const exportPayload = {
+      ...analysis,
+      source: analysis.source,
+    };
+    const jsonBlob = new Blob([JSON.stringify(exportPayload, null, 2)], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(jsonBlob);
@@ -384,7 +388,23 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   const displayDuration = analysis.duration ?? videoRecord?.duration ?? 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Phase 6.1: 當結果的 source === 'mock' 時，報告頁頂部顯示固定的醒目標示 */}
+      {analysis.source === 'mock' && (
+        <div
+          role="note"
+          className="sticky top-16 z-20 px-4 py-2.5 rounded-2xl bg-amber-500/15 border border-amber-400/35 backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-xs text-amber-200"
+        >
+          <div className="flex items-center gap-2 font-medium">
+            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+            <span>模擬資料（非真實辨識結果）</span>
+          </div>
+          <span className="text-[11px] text-amber-200/80">
+            此報告由前端內建模擬引擎產生，僅供介面與流程展示；如需實機推論請於右上角切換至 REST API 後端。
+          </span>
+        </div>
+      )}
+
       {/* 頂部返回、動作識別結果與 Sensei AI 閉環訓練操作列 */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
@@ -397,7 +417,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             返回影片庫
           </button>
           <span className="text-zinc-700">|</span>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-[11px] font-medium text-zinc-200">
               系統識別結果
             </span>
@@ -412,6 +432,11 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 信心度 {analysis.confidence}%
               </span>
             )}
+            <span className="px-2 py-0.5 rounded-full bg-zinc-900 border border-white/[0.08] text-[10px] text-zinc-400">
+              {actionMeta.provenance.status === 'cited' && actionMeta.provenance.citation
+                ? `標準來源：${actionMeta.provenance.citation}`
+                : '初始經驗閾值，待驗證'}
+            </span>
           </div>
         </div>
 
@@ -438,8 +463,8 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         </div>
       </div>
 
-      {/* JAB AI 回合式極簡數據指標列 (Minimalist Metric Strip) */}
-      <div className="lab-card p-6 grid grid-cols-2 sm:grid-cols-5 gap-6 divide-y sm:divide-y-0 sm:divide-x divide-white/[0.06]">
+      {/* JAB AI 回合式極簡數據指標列 (Minimalist Metric Strip) — 穩定度與爆發力僅在後端提供 metrics 時顯示 */}
+      <div className="lab-card p-6 grid grid-cols-2 sm:grid-flow-col sm:auto-cols-fr gap-6 divide-y sm:divide-y-0 sm:divide-x divide-white/[0.06]">
         <div className="sm:pr-4">
           <div className="text-xs text-zinc-500">資料庫比對識別動作</div>
           <div className="mt-1.5 flex items-baseline gap-2">
@@ -453,7 +478,10 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             )}
           </div>
           <div className="text-[11px] text-zinc-500 mt-0.5">
-            {actionMeta.martialArt}標準模型
+            {actionMeta.martialArt}標準模型 ·{' '}
+            {actionMeta.provenance.status === 'cited' && actionMeta.provenance.citation
+              ? actionMeta.provenance.citation
+              : '初始經驗閾值，待驗證'}
           </div>
         </div>
 
@@ -476,12 +504,23 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           </div>
         </div>
 
-        <div className="pt-4 sm:pt-0 sm:px-6">
-          <div className="text-xs text-zinc-500">核心軸線穩定度</div>
-          <div className="mt-1.5 text-2xl font-semibold font-mono text-zinc-100 tabular-nums">
-            {subMetrics.stabilityScore}
+        {subMetrics.stabilityScore !== undefined && (
+          <div className="pt-4 sm:pt-0 sm:px-6">
+            <div className="text-xs text-zinc-500">核心軸線穩定度</div>
+            <div className="mt-1.5 text-2xl font-semibold font-mono text-zinc-100 tabular-nums">
+              {subMetrics.stabilityScore}
+            </div>
           </div>
-        </div>
+        )}
+
+        {subMetrics.explosivenessScore !== undefined && (
+          <div className="pt-4 sm:pt-0 sm:px-6">
+            <div className="text-xs text-zinc-500">動作爆發力</div>
+            <div className="mt-1.5 text-2xl font-semibold font-mono text-zinc-100 tabular-nums">
+              {subMetrics.explosivenessScore}
+            </div>
+          </div>
+        )}
 
         <div className="pt-4 sm:pt-0 sm:pl-6">
           <div className="text-xs text-zinc-500">最大角度偏差</div>

@@ -63,6 +63,16 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
     const metrics = computeBiomechanicsMetrics(sample);
     expect(metrics.complianceRate).toBe(75);
     expect(metrics.peakDeviationDeg).toBe(10);
+    // 未提供 analysis.metrics 時，不得推算 stabilityScore 與 explosivenessScore
+    expect(metrics.stabilityScore).toBeUndefined();
+    expect(metrics.explosivenessScore).toBeUndefined();
+
+    const withBackendMetrics = computeBiomechanicsMetrics({
+      ...sample,
+      metrics: { stability: 91, explosiveness: 87 },
+    });
+    expect(withBackendMetrics.stabilityScore).toBe(91);
+    expect(withBackendMetrics.explosivenessScore).toBe(87);
   });
 
   it('handles empty time series points without NaN', () => {
@@ -84,6 +94,8 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
     const metrics = computeBiomechanicsMetrics(emptySample);
     expect(metrics.complianceRate).toBe(0);
     expect(metrics.peakDeviationDeg).toBe(0);
+    expect(metrics.stabilityScore).toBeUndefined();
+    expect(metrics.explosivenessScore).toBeUndefined();
   });
 
   it('validates docs/api/analysis-response.example.json against the contract schema', () => {
@@ -120,7 +132,7 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
     expect(validated.metrics).toBeUndefined();
   });
 
-  it('supports all 8 Karate and Taekwondo techniques in ACTION_METADATA', () => {
+  it('supports all 8 Karate and Taekwondo techniques in ACTION_METADATA with honest provenance', () => {
     const actionKeys = Object.keys(ACTION_METADATA) as ActionType[];
     expect(actionKeys.length).toBe(8);
     for (const act of actionKeys) {
@@ -128,6 +140,9 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
       expect(meta.label.length).toBeGreaterThan(0);
       expect(meta.terminology.length).toBeGreaterThan(0);
       expect(meta.primaryJoints.length).toBeGreaterThan(0);
+      expect(meta.cameraViewHint.length).toBeGreaterThan(0);
+      expect(meta.provenance.status).toBe('heuristic-unverified');
+      expect(meta.provenance.citation).toBeUndefined();
 
       const validated = validateAnalysisResponse({
         analysisId: `ana-${act}`,
