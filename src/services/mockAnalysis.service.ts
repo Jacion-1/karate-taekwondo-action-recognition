@@ -44,17 +44,32 @@ function generateRealisticSeries(
       standardMax = Math.round(85 + wave * 95);
       const deviation = progress > 0.42 && progress < 0.58 ? -14 : Math.sin(i * 0.9) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'lunge_punch' && jointName === 'left_knee') {
+    } else if (actionType === 'uraken_uchi' && jointName === 'right_elbow') {
+      const wave = Math.sin(progress * Math.PI);
+      standardMin = Math.round(65 + wave * 90);
+      standardMax = Math.round(82 + wave * 90);
+      const deviation = progress > 0.43 && progress < 0.59 ? -13 : Math.sin(i * 0.85) * 3;
+      actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
+    } else if (actionType === 'shuto_uchi' && jointName === 'right_elbow') {
+      const wave = Math.sin(progress * Math.PI);
+      standardMin = Math.round(68 + wave * 82);
+      standardMax = Math.round(84 + wave * 84);
+      const deviation = progress > 0.44 && progress < 0.6 ? -14 : Math.cos(i * 0.8) * 3;
+      actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
+    } else if (
+      (actionType === 'lunge_punch' || actionType === 'zenkutsu_dachi') &&
+      jointName === 'left_knee'
+    ) {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(150 - wave * 45);
       standardMax = Math.round(166 - wave * 41);
       const deviation = progress > 0.45 && progress < 0.65 ? 14 : Math.cos(i * 0.8) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'elbow_strike' && jointName === 'right_elbow') {
-      const wave = Math.sin(progress * Math.PI);
-      standardMin = Math.round(115 - wave * 80);
-      standardMax = Math.round(132 - wave * 77);
-      const deviation = progress > 0.43 && progress < 0.59 ? 15 : Math.sin(i * 0.85) * 3;
+    } else if (actionType === 'fighting_stance' && jointName === 'right_knee') {
+      const wave = Math.sin(progress * Math.PI * 2) * 0.5 + 0.5;
+      standardMin = Math.round(135 + wave * 6);
+      standardMax = Math.round(152 + wave * 6);
+      const deviation = progress > 0.42 && progress < 0.6 ? 13 : Math.sin(i * 0.7) * 2;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
     } else if (actionType === 'age_uke' && jointName === 'right_elbow') {
       const wave = Math.sin(progress * Math.PI);
@@ -75,7 +90,6 @@ function generateRealisticSeries(
       const deviation = progress > 0.45 && progress < 0.6 ? -13 : Math.cos(i * 0.8) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
     } else if (actionType === 'hook_kick' && jointName === 'right_knee') {
-      // 勾踢獨特波形：先伸直展髖 (progress ~0.35 達 160°+) 再瞬間屈膝勾回 (progress ~0.55 降至 105°)
       const extendPhase = Math.exp(-Math.pow((progress - 0.34) / 0.14, 2));
       const hookPhase = Math.exp(-Math.pow((progress - 0.54) / 0.12, 2));
       standardMin = Math.round(115 + extendPhase * 45 - hookPhase * 20);
@@ -131,21 +145,25 @@ const DEMO_ACTION_CYCLE: ActionType[] = [
   'straight_punch',
   'front_kick',
   'lunge_punch',
+  'uraken_uchi',
+  'shuto_uchi',
   'age_uke',
   'soto_uke',
+  'gedan_barai',
   'side_kick',
   'back_kick',
-  'gedan_barai',
-  'elbow_strike',
   'axe_kick',
   'hook_kick',
+  'zenkutsu_dachi',
+  'fighting_stance',
 ];
 let demoCycleIndex = 0;
 
 const ACTION_CONFIDENCE_MAP: Record<ActionType, number> = {
-  straight_punch: 96.4,
   lunge_punch: 95.6,
-  elbow_strike: 94.8,
+  straight_punch: 96.4,
+  uraken_uchi: 94.7,
+  shuto_uchi: 94.5,
   age_uke: 95.2,
   soto_uke: 95.0,
   gedan_barai: 94.9,
@@ -155,6 +173,8 @@ const ACTION_CONFIDENCE_MAP: Record<ActionType, number> = {
   back_kick: 93.8,
   axe_kick: 94.3,
   hook_kick: 93.5,
+  zenkutsu_dachi: 95.4,
+  fighting_stance: 95.1,
 };
 
 /**
@@ -177,14 +197,17 @@ function recognizeActionFromVideo(video: LocalVideoRecord): {
       return { actionType: act, confidence: ACTION_CONFIDENCE_MAP[act] };
     }
   }
-  if (name.includes('lunge') || name.includes('oi') || name.includes('追擊') || name.includes('順拳')) {
+  if (name.includes('lunge') || name.includes('oi') || name.includes('追擊') || name.includes('正拳突')) {
     return { actionType: 'lunge_punch', confidence: 95.6 };
+  }
+  if (name.includes('uraken') || name.includes('裏拳') || name.includes('背拳')) {
+    return { actionType: 'uraken_uchi', confidence: 94.7 };
+  }
+  if (name.includes('shuto') || name.includes('sonnal') || name.includes('手刀')) {
+    return { actionType: 'shuto_uchi', confidence: 94.5 };
   }
   if (name.includes('punch') || name.includes('正拳') || name.includes('逆突')) {
     return { actionType: 'straight_punch', confidence: 96.4 };
-  }
-  if (name.includes('elbow') || name.includes('empi') || name.includes('肘')) {
-    return { actionType: 'elbow_strike', confidence: 94.8 };
   }
   if (name.includes('age') || name.includes('上段')) {
     return { actionType: 'age_uke', confidence: 95.2 };
@@ -204,7 +227,7 @@ function recognizeActionFromVideo(video: LocalVideoRecord): {
   if (name.includes('side') || name.includes('側踢')) {
     return { actionType: 'side_kick', confidence: 94.6 };
   }
-  if (name.includes('hook') || name.includes('huryeo') || name.includes('勾踢')) {
+  if (name.includes('hook') || name.includes('huryeo') || name.includes('golcha') || name.includes('勾踢')) {
     return { actionType: 'hook_kick', confidence: 93.5 };
   }
   if (name.includes('back') || name.includes('後踢')) {
@@ -212,6 +235,12 @@ function recognizeActionFromVideo(video: LocalVideoRecord): {
   }
   if (name.includes('axe') || name.includes('下壓') || name.includes('下劈')) {
     return { actionType: 'axe_kick', confidence: 94.3 };
+  }
+  if (name.includes('zenkutsu') || name.includes('apkubi') || name.includes('前屈立')) {
+    return { actionType: 'zenkutsu_dachi', confidence: 95.4 };
+  }
+  if (name.includes('fighting') || name.includes('gyeorugi') || name.includes('實戰姿勢')) {
+    return { actionType: 'fighting_stance', confidence: 95.1 };
   }
 
   // 依據影片 ID 雜湊自動推論動作類別
@@ -237,7 +266,7 @@ export const mockAnalysisService: IAnalysisApiClient & {
     return {
       ok: true,
       latencyMs: 8,
-      message: '內建空手道／跆拳道 12 項標準動作識別與生物力學模擬引擎就緒 (v2.5)',
+      message: '內建空手道 12 項／跆拳道 12 項標準動作識別與生物力學模擬引擎就緒 (v2.6)',
     };
   },
 
@@ -572,26 +601,26 @@ export const mockAnalysisService: IAnalysisApiClient & {
         ];
         break;
 
-      case 'elbow_strike':
+      case 'uraken_uchi':
         primaryJoint = 'right_elbow';
         totalScore = 88;
         grade = 'A';
         feedbackSummary =
-          `系統經資料庫特徵比對識別為「空手道・近身肘擊 (Empi-Uchi)」（信心度 ${confidence}%）。腰胯旋轉帶動肘尖橫向切入相當果斷，但在擊打頂點（約 ${peakTime} 秒）前臂摺疊未完全收緊（肘角 62°），略高於最佳結構剛性區間（35°–55°）。`;
+          `系統經資料庫特徵比對識別為「空手道・裏拳打 (Uraken-uchi)」（信心度 ${confidence}%）。以手肘為支點的拳背鞭打速度出色，惟在擊打頂點瞬間（約 ${peakTime} 秒）手肘延伸略顯僵硬（146°），且缺乏腰胯微幅旋動帶動，回收彈回速度可再提升。`;
         strengths = [
-          '由腰胯核心旋轉帶動肩膀與肘尖出擊，非單靠手臂揮動',
-          '對側引手強力拉回腰際，與擊打肘形成良好雙向旋轉力偶',
+          '起勢時拳背確實置於對側肩前蓄力，出擊隱蔽性佳',
+          '擊中後能沿原軌跡快速折返，未出現手臂下垂露空',
         ];
         defects = [
           {
             id: `def-${Date.now()}-1`,
             timestamp: peakTime,
             jointName: 'right_elbow',
-            currentValue: 62,
-            standardRange: [35, 55],
-            message: '肘擊瞬間前臂與上臂夾角偏大（未收緊），導致衝擊力分散且肘尖不夠突出。',
+            currentValue: 146,
+            standardRange: [155, 172],
+            message: '裏拳擊打時單靠手臂硬甩，手肘支點展開不足且缺乏鞭打彈性。',
             prescription:
-              '修正建議：出肘時將拳頭旋內貼近同側胸口或肋骨，把肘關節極限摺疊鎖緊於 45° 左右再以腰力撞擊。',
+              '修正建議：先以腰轉帶動上臂與肘尖指向目標，再瞬間放鬆前臂如鞭子般甩出拳背關節（延伸至 160° 左右）並立即彈回。',
             severity: 'moderate',
           },
           {
@@ -600,9 +629,45 @@ export const mockAnalysisService: IAnalysisApiClient & {
             jointName: 'torso',
             currentValue: 158,
             standardRange: [165, 180],
-            message: '近距離出肘時上半身過度前傾，影響擊中後的距離控制與回防。',
+            message: '橫向揮擊時肩膀隨慣性微幅外傾，影響下盤重心穩定。',
             prescription:
-              '修正建議：利用前屈立或騎馬立步法欺近目標距離，維持脊柱垂直旋轉而非彎腰前探。',
+              '修正建議：收緊核心抗側傾肌群，配合對側引手拉回腰側以平衡橫向甩動慣性。',
+            severity: 'minor',
+          },
+        ];
+        break;
+
+      case 'shuto_uchi':
+        primaryJoint = 'right_elbow';
+        totalScore = 86;
+        grade = 'A';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「空手道・手刀打 (Shuto-uchi)」（信心度 ${confidence}%）。由耳側向外揮斬的腰轉時序流暢，但在擊打瞬間（約 ${peakTime} 秒）手肘彎曲角度偏大（139°），且手腕張力略顯鬆散，容易演變成用手掌拍打。`;
+        strengths = [
+          '蓄力階段手刀確實貼近耳際，對側手同步向前伸出定標',
+          '擊打瞬間骨盆與雙肩旋轉同步率高，傳導力矩完整',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'right_elbow',
+            currentValue: 139,
+            standardRange: [150, 168],
+            message: '手刀揮擊終點手肘過度彎曲，攻擊距離縮短且易變成手掌拍擊。',
+            prescription:
+              '修正建議：揮擊至鎖骨／頸側高度時將前臂延伸至 155°–165°，四指併攏伸直、大拇指內扣，以小指側手刀邊緣精準切入。',
+            severity: 'moderate',
+          },
+          {
+            id: `def-${Date.now()}-2`,
+            timestamp: recoveryTime,
+            jointName: 'hip',
+            currentValue: 146,
+            standardRange: [115, 138],
+            message: '定型時後屈立／前屈立骨盆微幅外飄，影響下一動連貫。',
+            prescription:
+              '修正建議：手刀定型瞬間同步鎖定下盤膝蓋方向與引手腰側位置，形成短暫極決め（Kime）。',
             severity: 'minor',
           },
         ];
@@ -613,9 +678,9 @@ export const mockAnalysisService: IAnalysisApiClient & {
         totalScore = 87;
         grade = 'A';
         feedbackSummary =
-          `系統經資料庫特徵比對識別為「中段外受格擋 (Soto-Uke / Momtong-Makgi)」（信心度 ${confidence}%）。前臂由外向內揮擺保護軀幹中線軌跡清晰，但在定型瞬間（約 ${peakTime} 秒）手肘伸展過直（116°），高於標準 90° 結構角（85°–105°）。`;
+          `系統經資料庫特徵比對識別為「中段外受／中段擋 (Soto-uke / Momtong-makgi)」（信心度 ${confidence}%）。前臂保護軀幹中線軌跡清晰，但在定型瞬間（約 ${peakTime} 秒）手肘伸展過直（116°），高於標準 90° 結構角（85°–105°）。`;
         strengths = [
-          '由耳側向外再向內格擋的旋轉動量充足，有效撥開中段直線攻擊',
+          '前臂揮擺格擋動量充足，有效保護胸腹中線區域',
           '格擋過程下盤與軀幹中軸穩定，未出現左右晃動',
         ];
         defects = [
@@ -649,7 +714,7 @@ export const mockAnalysisService: IAnalysisApiClient & {
         totalScore = 84;
         grade = 'B';
         feedbackSummary =
-          `系統經資料庫特徵比對識別為「跆拳道・勾踢 (Huryeo-Chagi / Ura-Mawashi-Geri)」（信心度 ${confidence}%）。前段側向展髖伸直軌跡明確，但在由伸直轉為屈膝勾回的關鍵瞬間（約 ${peakTime} 秒）膕旁肌收縮速度偏慢（膝角 136°），使勾打鞭甩感略顯斷裂。`;
+          `系統經資料庫特徵比對識別為「跆拳道・勾踢 (Huryeo-chagi / Golcha-chagi)」（信心度 ${confidence}%）。前段側向展髖伸直軌跡明確，但在由伸直轉為屈膝勾回的關鍵瞬間（約 ${peakTime} 秒）膕旁肌收縮速度偏慢（膝角 136°），使勾打鞭甩感略顯斷裂。`;
         strengths = [
           '第一階段側向提膝與展髖角度充分，成功製造假動作空間',
           '支撐腳前腳掌旋轉穩定，勾擊過程未出現大幅後仰失衡',
@@ -680,13 +745,85 @@ export const mockAnalysisService: IAnalysisApiClient & {
         ];
         break;
 
+      case 'zenkutsu_dachi':
+        primaryJoint = 'left_knee';
+        totalScore = 88;
+        grade = 'A';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「前屈立 (Zenkutsu-dachi / Ap-kubi)」（信心度 ${confidence}%）。前後腳跨步寬度與上身垂直度良好，但在下沉定型階段（約 ${peakTime} 秒）前膝屈曲角度略淺（134°），重心偏後且後腳跟有微幅浮起現象。`;
+        strengths = [
+          '雙腳左右橫向維持與肩同寬，下盤具備良好抗側向推力穩定度',
+          '上身保持垂直挺立，未因跨步過大而產生駝背前傾',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'left_knee',
+            currentValue: 134,
+            standardRange: [105, 125],
+            message: '前腳膝蓋屈曲不足導致重心過後（未達 60:40），且前膝有微幅內扣趨勢。',
+            prescription:
+              '修正建議：前膝向前下方推進至垂直遮住腳尖（膝角約 110°–120°），膝蓋方向嚴格對齊腳尖正前方，後腿打直並將後腳跟踩實地面。',
+            severity: 'moderate',
+          },
+          {
+            id: `def-${Date.now()}-2`,
+            timestamp: recoveryTime,
+            jointName: 'hip',
+            currentValue: 143,
+            standardRange: [115, 138],
+            message: '骨盆兩側高度微幅不平，後側髖關節外翻。',
+            prescription:
+              '修正建議：收緊後腿臀大肌並將後腳尖朝前斜約 30°，使骨盆水平面向正前方。',
+            severity: 'minor',
+          },
+        ];
+        break;
+
+      case 'fighting_stance':
+        primaryJoint = 'right_knee';
+        totalScore = 89;
+        grade = 'A';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「跆拳道・實戰姿勢 (Gyeorugi-junbi)」（信心度 ${confidence}%）。身體側向角度與雙手護架高度標準，惟在步法彈性律動期間（約 ${peakTime} 秒）雙膝伸展過直（164°），削弱了瞬間起動踢擊的地面反作用力。`;
+        strengths = [
+          '身體呈 45° 側向站位有效縮小受擊面積，雙手穩定護於胸頷前方',
+          '前後腳重心分配均衡，具備隨時前後滑步（Step）之機動性',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'right_knee',
+            currentValue: 164,
+            standardRange: [135, 155],
+            message: '律動過程中膝關節接近完全打直，重心僵硬且高重心不利於快速起腿。',
+            prescription:
+              '修正建議：雙膝維持 140°–150° 微彎彈性角度，以前腳掌輕快點地維持阿基里斯腱預伸展張力。',
+            severity: 'moderate',
+          },
+          {
+            id: `def-${Date.now()}-2`,
+            timestamp: recoveryTime,
+            jointName: 'left_elbow',
+            currentValue: 138,
+            standardRange: [80, 115],
+            message: '律動後段前手護架微幅下垂外張，中段防禦出現空檔。',
+            prescription:
+              '修正建議：前手肘自然收貼肋骨斜前方（肘角約 95°），拳高維持於鎖骨至下巴高度。',
+            severity: 'minor',
+          },
+        ];
+        break;
+
       case 'axe_kick':
       default:
         primaryJoint = 'right_knee';
         totalScore = 84;
         grade = 'B';
         feedbackSummary =
-          `系統經資料庫特徵比對識別為「跆拳道・下劈 (Naeryeo-Chagi / Kakato-Otoshi)」（信心度 ${confidence}%）。起腿越過頭頂高度優異，但在由最高點向下劈落瞬間（約 ${peakTime} 秒）膝關節微彎（156°），且軀幹有後仰代償現象，建議強化膕旁肌動態柔韌度與核心穩定。`;
+          `系統經資料庫特徵比對識別為「跆拳道・下劈 (Naeryeo-chagi)」（信心度 ${confidence}%）。起腿越過頭頂高度優異，但在由最高點向下劈落瞬間（約 ${peakTime} 秒）膝關節微彎（156°），且軀幹有後仰代償現象，建議強化膕旁肌動態柔韌度與核心穩定。`;
         strengths = [
           '最高點抬腿超越頭部高度，由內向外擺上軌跡流暢無卡頓',
           '下劈角速度峰值突出，具備強大垂直下壓動量',
@@ -736,7 +873,8 @@ export const mockAnalysisService: IAnalysisApiClient & {
       const isUpper =
         actionType === 'straight_punch' ||
         actionType === 'lunge_punch' ||
-        actionType === 'elbow_strike' ||
+        actionType === 'uraken_uchi' ||
+        actionType === 'shuto_uchi' ||
         actionType === 'age_uke' ||
         actionType === 'soto_uke' ||
         actionType === 'gedan_barai';
@@ -748,9 +886,7 @@ export const mockAnalysisService: IAnalysisApiClient & {
         ? clamp01((152 - wave * 14) / 360)
         : clamp01(162 / 360);
       const rightWristX = isUpper
-        ? actionType === 'elbow_strike'
-          ? clamp01((290 + 18 + wave * 12) / 640)
-          : clamp01((290 + 58 + wave * 106) / 640)
+        ? clamp01((290 + 58 + wave * 106) / 640)
         : clamp01((290 + 36) / 640);
       const rightWristY = isUpper ? clamp01(138 / 360) : clamp01(148 / 360);
 
@@ -789,7 +925,7 @@ export const mockAnalysisService: IAnalysisApiClient & {
       analysisId: `ana-${videoId}`,
       videoId,
       source: 'mock' as const,
-      modelVersion: 'mock-biomechanics-v2.5',
+      modelVersion: 'mock-biomechanics-v2.6',
       fps: 30,
       actionType,
       confidence,
@@ -934,7 +1070,8 @@ export const mockAnalysisService: IAnalysisApiClient & {
         if (
           simulatedAction === 'straight_punch' ||
           simulatedAction === 'lunge_punch' ||
-          simulatedAction === 'elbow_strike' ||
+          simulatedAction === 'uraken_uchi' ||
+          simulatedAction === 'shuto_uchi' ||
           simulatedAction === 'age_uke' ||
           simulatedAction === 'soto_uke' ||
           simulatedAction === 'gedan_barai'
@@ -959,16 +1096,6 @@ export const mockAnalysisService: IAnalysisApiClient & {
             ctx.lineTo(jointX, jointY);
             ctx.lineTo(wristX, wristY);
             ctx.stroke();
-          } else if (simulatedAction === 'elbow_strike') {
-            jointX = centerX + 28 + wave * 46;
-            jointY = 142 - wave * 10;
-            const wristX = centerX + 16 + wave * 14;
-            const wristY = 136;
-            ctx.beginPath();
-            ctx.moveTo(centerX, 132);
-            ctx.lineTo(jointX, jointY);
-            ctx.lineTo(wristX, wristY);
-            ctx.stroke();
           } else {
             jointX = centerX + 32 + wave * 38;
             jointY = 152 - wave * 14;
@@ -985,6 +1112,19 @@ export const mockAnalysisService: IAnalysisApiClient & {
           ctx.beginPath();
           ctx.moveTo(centerX, hipY);
           ctx.lineTo(centerX + 38, 300);
+          ctx.stroke();
+        } else if (
+          simulatedAction === 'zenkutsu_dachi' ||
+          simulatedAction === 'fighting_stance'
+        ) {
+          jointX = centerX + 34 + wave * 18;
+          jointY = hipY + 38 - wave * 10;
+          const ankleX = jointX + 12;
+          const ankleY = 300;
+          ctx.beginPath();
+          ctx.moveTo(centerX, hipY);
+          ctx.lineTo(jointX, jointY);
+          ctx.lineTo(ankleX, ankleY);
           ctx.stroke();
         } else {
           const highLift = simulatedAction === 'axe_kick' ? 82 : 58;

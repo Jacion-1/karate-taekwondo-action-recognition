@@ -576,50 +576,93 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
             </div>
 
             <div className="flex flex-col gap-2 max-h-[420px] overflow-y-auto pr-1">
-              {(Object.keys(ACTION_METADATA) as ActionType[])
-                .filter((type) => {
-                  if (disciplineFilter === 'all') return true;
-                  const d = ACTION_METADATA[type].discipline;
-                  return d === disciplineFilter || d === 'both';
-                })
-                .map((type) => {
-                  const meta = ACTION_METADATA[type];
-                  const isSelected = recognitionMode === type;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      disabled={isRecording}
-                      onClick={() => setRecognitionMode(type)}
-                      className={`group text-left p-3.5 rounded-2xl border transition-all ${
-                        isSelected
-                          ? 'bg-zinc-900 border-white/25'
-                          : 'bg-zinc-900/30 border-white/[0.05] hover:bg-zinc-900/60 hover:border-white/[0.1]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full transition ${
-                              isSelected
-                                ? 'bg-white'
-                                : 'bg-zinc-700 group-hover:bg-zinc-500'
-                            }`}
-                          />
-                          <span className="font-medium text-sm text-white">
-                            {meta.label}
-                          </span>
-                          <span className="text-[11px] font-mono text-zinc-500 truncate max-w-[140px]">
-                            {meta.terminology}
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-zinc-400 shrink-0">
-                          {meta.martialArt}
+              {(disciplineFilter === 'karate'
+                ? ([
+                    'lunge_punch',
+                    'straight_punch',
+                    'uraken_uchi',
+                    'shuto_uchi',
+                    'age_uke',
+                    'soto_uke',
+                    'gedan_barai',
+                    'front_kick',
+                    'roundhouse_kick',
+                    'side_kick',
+                    'back_kick',
+                    'zenkutsu_dachi',
+                  ] as ActionType[])
+                : disciplineFilter === 'taekwondo'
+                  ? ([
+                      'front_kick',
+                      'roundhouse_kick',
+                      'side_kick',
+                      'back_kick',
+                      'axe_kick',
+                      'hook_kick',
+                      'straight_punch',
+                      'age_uke',
+                      'soto_uke',
+                      'gedan_barai',
+                      'fighting_stance',
+                      'zenkutsu_dachi',
+                    ] as ActionType[])
+                  : (Object.keys(ACTION_METADATA) as ActionType[])
+              ).map((type) => {
+                const meta = ACTION_METADATA[type];
+                const isSelected = recognitionMode === type;
+                const displayLabel =
+                  disciplineFilter === 'karate'
+                    ? (meta.karateLabel ?? meta.label)
+                    : disciplineFilter === 'taekwondo'
+                      ? (meta.taekwondoLabel ?? meta.label)
+                      : meta.label;
+                const displayTerminology =
+                  disciplineFilter === 'karate'
+                    ? (meta.karateTerminology ?? meta.terminology)
+                    : disciplineFilter === 'taekwondo'
+                      ? (meta.taekwondoTerminology ?? meta.terminology)
+                      : meta.terminology;
+                const displayMartialArt =
+                  disciplineFilter === 'karate'
+                    ? '空手道'
+                    : disciplineFilter === 'taekwondo'
+                      ? '跆拳道'
+                      : meta.martialArt;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    disabled={isRecording}
+                    onClick={() => setRecognitionMode(type)}
+                    className={`group text-left p-3.5 rounded-2xl border transition-all ${
+                      isSelected
+                        ? 'bg-zinc-900 border-white/25'
+                        : 'bg-zinc-900/30 border-white/[0.05] hover:bg-zinc-900/60 hover:border-white/[0.1]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full transition ${
+                            isSelected
+                              ? 'bg-white'
+                              : 'bg-zinc-700 group-hover:bg-zinc-500'
+                          }`}
+                        />
+                        <span className="font-medium text-sm text-white">
+                          {displayLabel}
+                        </span>
+                        <span className="text-[11px] font-mono text-zinc-500 truncate max-w-[155px]">
+                          {displayTerminology}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-400 pl-3.5 leading-relaxed">
-                        {meta.description}
-                      </p>
+                      <span className="text-[11px] text-zinc-400 shrink-0">
+                        {displayMartialArt}
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-400 pl-3.5 leading-relaxed">
+                      {meta.description}
+                    </p>
                       <div className="mt-2 pl-3.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-zinc-500">
                         <span>{meta.targetAngleHint}</span>
                         <span>

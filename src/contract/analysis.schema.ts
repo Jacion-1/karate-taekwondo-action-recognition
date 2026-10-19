@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
 export const ActionTypeSchema = z.enum([
-  'straight_punch',
   'lunge_punch',
-  'elbow_strike',
+  'straight_punch',
+  'uraken_uchi',
+  'shuto_uchi',
   'age_uke',
   'soto_uke',
   'gedan_barai',
@@ -13,6 +14,8 @@ export const ActionTypeSchema = z.enum([
   'back_kick',
   'axe_kick',
   'hook_kick',
+  'zenkutsu_dachi',
+  'fighting_stance',
 ]);
 
 export const JointNameSchema = z.enum([
