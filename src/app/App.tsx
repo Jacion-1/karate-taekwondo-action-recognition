@@ -28,11 +28,20 @@ export const App: React.FC = () => {
   );
   const [isClientHealthy, setIsClientHealthy] = useState<boolean>(true);
 
-  // 啟動時重設上次中斷殘留的 uploading / processing 紀錄
+  // 啟動時重設上次中斷殘留的 uploading / processing 紀錄，並請求持久化儲存空間
   useEffect(() => {
     videoRepository.resetInterruptedAnalyses().catch(() => {
       // 忽略啟動清理異常
     });
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.storage &&
+      typeof navigator.storage.persist === 'function'
+    ) {
+      navigator.storage.persist().catch(() => {
+        // 失敗則忽略
+      });
+    }
   }, []);
 
   useEffect(() => {

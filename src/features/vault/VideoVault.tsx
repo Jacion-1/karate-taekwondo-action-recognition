@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Trash2,
@@ -289,11 +289,41 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
     ActionType | 'UNIDENTIFIED' | 'ALL'
   >('ALL');
   const [statusFilter, setStatusFilter] = useState<UploadStatus | 'ALL'>('ALL');
+  const [storageEstimate, setStorageEstimate] = useState<{
+    usageBytes: number;
+    quotaBytes?: number;
+  } | null>(null);
 
   const videos = useLiveQuery(
     () => db.videos.orderBy('createdAt').reverse().toArray(),
     []
   );
+
+  useEffect(() => {
+    let active = true;
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.storage &&
+      typeof navigator.storage.estimate === 'function'
+    ) {
+      navigator.storage
+        .estimate()
+        .then((est) => {
+          if (active && typeof est.usage === 'number') {
+            setStorageEstimate({
+              usageBytes: est.usage,
+              quotaBytes: est.quota,
+            });
+          }
+        })
+        .catch(() => {
+          // 忽略不支援環境
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [videos]);
 
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
@@ -434,9 +464,25 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
       {/* 極簡標題與操作列 */}
       <div className="flex flex-wrap items-end justify-between gap-4 pb-6 border-b border-white/[0.06]">
         <div>
-          <h2 className="text-xl font-semibold text-white tracking-tight">
-            動作影片庫
-          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold text-white tracking-tight">
+              動作影片庫
+            </h2>
+            {storageEstimate && (
+              <span
+                className="px-2.5 py-0.5 rounded-full bg-zinc-900 border border-white/[0.07] text-[11px] font-mono text-zinc-400"
+                title="瀏覽器 IndexedDB 本機儲存空間用量 (navigator.storage.estimate)"
+              >
+                本機儲存：{(storageEstimate.usageBytes / (1024 * 1024)).toFixed(1)} MB
+                {storageEstimate.quotaBytes && storageEstimate.quotaBytes > 0
+                  ? ` / ${(storageEstimate.quotaBytes / (1024 * 1024 * 1024)).toFixed(1)} GB (${Math.min(
+                      100,
+                      (storageEstimate.usageBytes / storageEstimate.quotaBytes) * 100
+                    ).toFixed(2)}%)`
+                  : ''}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-zinc-400 mt-1">
             管理待識別與已完成分析的影片，由系統比對空手道／跆拳道資料庫自動識別動作並評分
           </p>

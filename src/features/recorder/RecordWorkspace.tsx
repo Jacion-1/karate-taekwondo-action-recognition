@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Video,
   Square,
@@ -27,6 +27,10 @@ import { analysisClientFactory } from '../../services/analysisClient.factory';
 import { videoRepository } from '../../db/repositories/video.repo';
 import { extractVideoMetadataAndThumbnail } from '../../shared/utils/videoMedia.utils';
 import { useToast } from '../../shared/components/ToastContainer';
+
+export const MAX_IMPORT_SIZE_MB = 200;
+export const MAX_IMPORT_SIZE_BYTES = MAX_IMPORT_SIZE_MB * 1024 * 1024;
+export const MAX_IMPORT_DURATION_SEC = 60;
 
 interface RecordWorkspaceProps {
   onNavigateToVault: () => void;
@@ -60,6 +64,19 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
   const [recentSavedId, setRecentSavedId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef<boolean>(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const {
     stream,
@@ -72,6 +89,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
 
   const { isRecording, startRecording, stopRecording } = useMediaRecorder(
     (savedId) => {
+      if (!mountedRef.current) return;
       setRecentSavedId(savedId);
       pushToast({
         type: 'success',
@@ -97,10 +115,23 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
 
     let remaining = 3;
     setCountdownSeconds(remaining);
-    const timer = setInterval(() => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+    }
+    countdownTimerRef.current = setInterval(() => {
+      if (!mountedRef.current) {
+        if (countdownTimerRef.current) {
+          clearInterval(countdownTimerRef.current);
+          countdownTimerRef.current = null;
+        }
+        return;
+      }
       remaining -= 1;
       if (remaining <= 0) {
-        clearInterval(timer);
+        if (countdownTimerRef.current) {
+          clearInterval(countdownTimerRef.current);
+          countdownTimerRef.current = null;
+        }
         setCountdownSeconds(null);
         startRecording(stream, requested);
       } else {
@@ -116,6 +147,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
     try {
       const preferred = recognitionMode === 'auto' ? undefined : recognitionMode;
       const id = await mockAnalysisService.createSyntheticDemoVideo(preferred);
+      if (!mountedRef.current) return;
       setRecentSavedId(id);
       pushToast({
         type: 'success',
@@ -126,7 +158,9 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
         message: '可立即執行資料庫比對與動作評估',
       });
     } finally {
-      setIsGeneratingDemo(false);
+      if (mountedRef.current) {
+        setIsGeneratingDemo(false);
+      }
     }
   };
 
@@ -143,6 +177,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
       const result = await analysisClientFactory
         .getClient()
         .uploadAndAnalyzeVideo(targetRecord);
+      if (!mountedRef.current) return;
       const label = ACTION_METADATA[result.actionType].label;
       const confText =
         result.confidence !== undefined ? `信心度 ${result.confidence}% · ` : '';
@@ -152,13 +187,16 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
       });
       onOpenAnalysis(record.id, result.analysisId);
     } catch (err) {
+      if (!mountedRef.current) return;
       pushToast({
         type: 'error',
         title: '識別分析失敗',
         message: err instanceof Error ? err.message : '未知錯誤',
       });
     } finally {
-      setIsAnalyzingInstant(false);
+      if (mountedRef.current) {
+        setIsAnalyzingInstant(false);
+      }
     }
   };
 
@@ -175,11 +213,32 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
       return;
     }
 
+    if (file.size > MAX_IMPORT_SIZE_BYTES) {
+      const actualSizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      pushToast({
+        type: 'error',
+        title: `檔案大小超過上限（上限 ${MAX_IMPORT_SIZE_MB} MB）`,
+        message: `您選擇的檔案為 ${actualSizeMb} MB，請剪輯或壓縮後再匯入。`,
+      });
+      return;
+    }
+
     setIsImportingFile(true);
     setRecentSavedId(null);
     try {
       const { duration, thumbnailDataUrl } =
         await extractVideoMetadataAndThumbnail(file, 3.5);
+      if (!mountedRef.current) return;
+
+      if (duration > MAX_IMPORT_DURATION_SEC) {
+        pushToast({
+          type: 'error',
+          title: `影片長度超過上限（上限 ${MAX_IMPORT_DURATION_SEC} 秒）`,
+          message: `此影片長度為 ${duration} 秒，請裁切為 ${MAX_IMPORT_DURATION_SEC} 秒以內的單一動作或回合片段。`,
+        });
+        return;
+      }
+
       const id = `vid-import-${Date.now()}`;
       const record: LocalVideoRecord = {
         id,
@@ -195,6 +254,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
         fileName: file.name,
       };
       await videoRepository.saveRecordedVideo(record);
+      if (!mountedRef.current) return;
       setRecentSavedId(id);
       pushToast({
         type: 'success',
@@ -202,13 +262,16 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
         message: `${file.name} (${duration}s) — 可立即執行識別分析`,
       });
     } catch (err) {
+      if (!mountedRef.current) return;
       pushToast({
         type: 'error',
         title: '影片匯入失敗',
         message: err instanceof Error ? err.message : '未知錯誤',
       });
     } finally {
-      setIsImportingFile(false);
+      if (mountedRef.current) {
+        setIsImportingFile(false);
+      }
     }
   };
 

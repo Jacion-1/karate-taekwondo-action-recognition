@@ -36,12 +36,27 @@ export async function extractVideoMetadataAndThumbnail(
       finish({ duration: fallbackDuration });
     };
 
+    let isProbingDuration = false;
+    let resolvedDuration: number | null = null;
+
     video.onloadedmetadata = () => {
       const rawDuration = video.duration;
+      if (rawDuration === Infinity || Number.isNaN(rawDuration)) {
+        // Chrome WebM 無 Duration header 時，透過 seek 至極大值強迫瀏覽器掃描結尾計算真實時長
+        isProbingDuration = true;
+        try {
+          video.currentTime = 1e101;
+          return;
+        } catch {
+          isProbingDuration = false;
+        }
+      }
+
       const validDuration =
         Number.isFinite(rawDuration) && rawDuration > 0
           ? Number(rawDuration.toFixed(1))
           : fallbackDuration;
+      resolvedDuration = validDuration;
 
       // 跳轉至 0.2 秒處擷取具有動作畫面的縮圖
       const targetTime = Math.min(0.25, validDuration * 0.2);
@@ -53,11 +68,30 @@ export async function extractVideoMetadataAndThumbnail(
     };
 
     video.onseeked = () => {
+      if (isProbingDuration) {
+        isProbingDuration = false;
+        const probed = video.duration;
+        const validDuration =
+          Number.isFinite(probed) && probed > 0
+            ? Number(probed.toFixed(1))
+            : fallbackDuration;
+        resolvedDuration = validDuration;
+        const targetTime = Math.min(0.25, validDuration * 0.2);
+        try {
+          video.currentTime = targetTime;
+          return;
+        } catch {
+          finish({ duration: validDuration });
+          return;
+        }
+      }
+
       const rawDuration = video.duration;
       const validDuration =
-        Number.isFinite(rawDuration) && rawDuration > 0
+        resolvedDuration ??
+        (Number.isFinite(rawDuration) && rawDuration > 0
           ? Number(rawDuration.toFixed(1))
-          : fallbackDuration;
+          : fallbackDuration);
 
       try {
         const canvas = document.createElement('canvas');

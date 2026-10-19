@@ -31,3 +31,15 @@
 - `AnalysisDashboard`：`getAnalysisById` 補上 `.catch` 並區分 `loading`、`not_found` 與 `error`（提供重試按鈕）三種狀態；`videoEl.play()` 處理 Promise rejection；移除 `togglePlay` 手動 `setIsPlaying`，統一由 `<video>` 原生事件驅動。
 - `VideoVault` 與 `App`：`handleQuickCreateAndAnalyze` 補上 `catch` 錯誤提示；`handleBatchUploadAllPending` 加入 `isBatchAnalyzing` 防重入鎖、進度顯示 `n/total` 與失敗彙整 Toast；移除以 `navigator.onLine` 誤擋區網後端與模擬引擎的邏輯，改以 `checkHealth()` 偵測（Mock 模式永遠為可用，HTTP 模式可點擊重新檢測）；頂部狀態膠囊在小螢幕保留顯示「模擬引擎／REST API」文字。
 
+---
+
+## Phase 4：錄影與媒體
+- `useMediaStream.ts`：先檢查 `navigator.mediaDevices?.getUserMedia` 是否存在，非安全環境直接顯示「需要 HTTPS 或 localhost 才能使用攝影機」；依 `NotAllowedError`、`NotFoundError`、`NotReadableError`、`OverconstrainedError` 對應明確繁體中文說明；加入遞增 `requestIdRef` 與 `mountedRef` 防止非同步競態導致背景攝影機軌道洩漏。
+- WebM duration 與 seek 實測與修補（`src/shared/utils/webmDurationFix.ts`、`useMediaRecorder.ts`、`videoMedia.utils.ts`）：
+  - **瀏覽器實測結果**：在 Chromium / Headless Chrome 下，`MediaRecorder` 串流產生的 `video/webm` 因 `Segment` 長度為未知（`0x01FFFFFFFFFFFFFF`）且 `Info`（`0x1549A966`）未寫入 `Duration`（`0x4489`），直接載入 `<video>` 時 `video.duration` 為 `Infinity`，導致時間軸無法正常 seek。
+  - **修補方案**：實作零外部依賴的最小 EBML Duration 修補器 `fixWebmDuration(blob, durationSeconds)`，解析開頭 8 KB 標頭並在 `Info` 區段寫入 8-byte Float64 `Duration`（依 `TimecodeScale` 換算毫秒），再透過 `Blob.slice` 零拷貝拼接後續 `Cluster` 資料；同時於 `extractVideoMetadataAndThumbnail` 對外部匯入之未修補 WebM 加入 `currentTime = 1e101` 探測退路。經瀏覽器實測修補後的 WebM 載入即具備有限 `duration` 且可任意 seek。
+- `useMediaRecorder.ts`：依實際 `mimeType` 動態決定副檔名（`.mp4` 或 `.webm`）；組件卸載時若仍在錄影自動停止並防止對已卸載組件 `setState`。
+- `RecordWorkspace.tsx`：新增匯入限制常數 `MAX_IMPORT_SIZE_MB = 200`（200 MB）與 `MAX_IMPORT_DURATION_SEC = 60`（60 秒），超限時顯示明確錯誤 Toast；卸載時清理 3 秒倒數計時器。
+- 儲存空間管理：於 `App.tsx` 啟動時呼叫 `navigator.storage.persist()`（忽略失敗），並於 `VideoVault.tsx` 標題旁顯示 `navigator.storage.estimate()` 本機儲存空間用量與配額百分比。
+
+
