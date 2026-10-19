@@ -9,12 +9,14 @@ import {
   type ActionAnalysisResponse,
   type ActionType,
 } from '../../types/martial-arts.types';
+import exampleResponseJson from '../../../docs/api/analysis-response.example.json';
 
-describe('apiClient.interface — validator & biomechanics metrics', () => {
-  it('calculates complianceRate, peakDeviationDeg, stabilityScore, and explosivenessScore accurately', () => {
+describe('apiClient.interface — strict Zod validator & biomechanics metrics', () => {
+  it('calculates complianceRate and peakDeviationDeg accurately', () => {
     const sample: ActionAnalysisResponse = {
       analysisId: 'ana-1',
       videoId: 'vid-1',
+      source: 'mock',
       actionType: 'straight_punch',
       confidence: 96.4,
       totalScore: 88,
@@ -25,36 +27,58 @@ describe('apiClient.interface — validator & biomechanics metrics', () => {
       angleTimeSeries: {
         jointName: 'right_elbow',
         points: [
-          { time: 0.0, actualAngle: 80, standardMin: 75, standardMax: 85 }, // compliant
-          { time: 0.5, actualAngle: 150, standardMin: 160, standardMax: 175 }, // out by 10 deg
-          { time: 1.0, actualAngle: 170, standardMin: 165, standardMax: 175 }, // compliant
-          { time: 1.5, actualAngle: 82, standardMin: 75, standardMax: 85 }, // compliant
+          {
+            time: 0.0,
+            actualAngle: 80,
+            standardMin: 75,
+            standardMax: 85,
+            standardBand: [75, 85],
+          },
+          {
+            time: 0.5,
+            actualAngle: 150,
+            standardMin: 160,
+            standardMax: 175,
+            standardBand: [160, 175],
+          },
+          {
+            time: 1.0,
+            actualAngle: 170,
+            standardMin: 165,
+            standardMax: 175,
+            standardBand: [165, 175],
+          },
+          {
+            time: 1.5,
+            actualAngle: 82,
+            standardMin: 75,
+            standardMax: 85,
+            standardBand: [75, 85],
+          },
         ],
       },
+      allJointSeries: [],
     };
 
     const metrics = computeBiomechanicsMetrics(sample);
-    expect(metrics.complianceRate).toBe(75); // 3 out of 4 points within range
+    expect(metrics.complianceRate).toBe(75);
     expect(metrics.peakDeviationDeg).toBe(10);
-    expect(metrics.stabilityScore).toBeGreaterThan(0);
-    expect(metrics.explosivenessScore).toBeGreaterThan(0);
   });
 
   it('handles empty time series points without NaN', () => {
     const emptySample: ActionAnalysisResponse = {
       analysisId: 'ana-empty',
       videoId: 'vid-empty',
+      source: 'backend',
       actionType: 'side_kick',
-      confidence: 92.1,
       totalScore: 70,
       grade: 'C',
-      duration: 1.0,
-      feedbackSummary: 'Empty',
       defects: [],
       angleTimeSeries: {
         jointName: 'left_knee',
         points: [],
       },
+      allJointSeries: [],
     };
 
     const metrics = computeBiomechanicsMetrics(emptySample);
@@ -62,29 +86,38 @@ describe('apiClient.interface — validator & biomechanics metrics', () => {
     expect(metrics.peakDeviationDeg).toBe(0);
   });
 
-  it('validates and normalizes a valid backend response payload including recognition confidence', () => {
-    const rawPayload = {
-      analysisId: 'ana-remote-99',
-      actionType: 'roundhouse_kick',
-      confidence: 96.8,
-      totalScore: 91,
-      grade: 'A',
-      duration: 3.1,
-      feedbackSummary: 'Excellent kick',
+  it('validates docs/api/analysis-response.example.json against the contract schema', () => {
+    const validated = validateAnalysisResponse(exampleResponseJson);
+    expect(validated.analysisId).toBe('ana-20261019-001');
+    expect(validated.source).toBe('backend');
+    expect(validated.actionType).toBe('roundhouse_kick');
+    expect(validated.frames?.length).toBe(2);
+    expect(validated.metrics?.stability).toBe(89);
+    expect(validated.defects.length).toBe(1);
+    expect(validated.angleTimeSeries.points[0].standardBand).toEqual([60, 78]);
+  });
+
+  it('preserves undefined for omitted optional fields instead of fabricating defaults', () => {
+    const minimalPayload = {
+      analysisId: 'ana-minimal-1',
+      source: 'backend',
+      actionType: 'straight_punch',
+      totalScore: 85,
       defects: [],
       angleTimeSeries: {
-        jointName: 'right_knee',
-        points: [{ time: 0.1, actualAngle: 120, standardMin: 110, standardMax: 130 }],
+        jointName: 'right_elbow',
+        points: [{ time: 0.0, actualAngle: 90, standardMin: 80, standardMax: 100 }],
       },
     };
 
-    const validated = validateAnalysisResponse(rawPayload, 'vid-fallback-1');
-    expect(validated.videoId).toBe('vid-fallback-1');
-    expect(validated.analysisId).toBe('ana-remote-99');
-    expect(validated.actionType).toBe('roundhouse_kick');
-    expect(validated.confidence).toBe(96.8);
-    expect(validated.allJointSeries?.length).toBe(1);
-    expect(validated.angleTimeSeries.points[0].standardBand).toEqual([110, 130]);
+    const validated = validateAnalysisResponse(minimalPayload, 'vid-minimal');
+    expect(validated.videoId).toBe('vid-minimal');
+    expect(validated.confidence).toBeUndefined();
+    expect(validated.strengths).toBeUndefined();
+    expect(validated.keyframes).toBeUndefined();
+    expect(validated.feedbackSummary).toBeUndefined();
+    expect(validated.frames).toBeUndefined();
+    expect(validated.metrics).toBeUndefined();
   });
 
   it('supports all 8 Karate and Taekwondo techniques in ACTION_METADATA', () => {
@@ -98,8 +131,10 @@ describe('apiClient.interface — validator & biomechanics metrics', () => {
 
       const validated = validateAnalysisResponse({
         analysisId: `ana-${act}`,
+        source: 'mock',
         actionType: act,
         totalScore: 86,
+        defects: [],
         angleTimeSeries: {
           jointName: meta.primaryJoints[0],
           points: [{ time: 0.5, actualAngle: 165, standardMin: 160, standardMax: 175 }],
@@ -109,27 +144,63 @@ describe('apiClient.interface — validator & biomechanics metrics', () => {
     }
   });
 
-  it('provides a default confidence when backend omits confidence field', () => {
-    const rawPayloadWithoutConfidence = {
-      analysisId: 'ana-remote-100',
-      actionType: 'straight_punch',
-      totalScore: 85,
-      angleTimeSeries: {
-        jointName: 'right_elbow',
-        points: [{ time: 0.0, actualAngle: 90, standardMin: 80, standardMax: 100 }],
-      },
-    };
+  it('throws INVALID_PAYLOAD with Zod path when required fields (source, actionType, defects) are missing or invalid', () => {
+    expect(() =>
+      validateAnalysisResponse({
+        analysisId: 'ana-missing-source',
+        actionType: 'straight_punch',
+        totalScore: 88,
+        defects: [],
+        angleTimeSeries: {
+          jointName: 'right_elbow',
+          points: [],
+        },
+      })
+    ).toThrowError(/source/);
 
-    const validated = validateAnalysisResponse(rawPayloadWithoutConfidence, 'vid-100');
-    expect(validated.confidence).toBeGreaterThanOrEqual(80);
-    expect(validated.confidence).toBeLessThanOrEqual(100);
-    expect(validated.keyframes).toEqual({
-      preparation: 0.8,
-      impact: 1.5,
-      recovery: 2.2,
-    });
-    expect(Array.isArray(validated.strengths)).toBe(true);
-    expect(validated.strengths!.length).toBeGreaterThan(0);
+    expect(() =>
+      validateAnalysisResponse({
+        analysisId: 'ana-bad-defect',
+        source: 'backend',
+        actionType: 'straight_punch',
+        totalScore: 88,
+        defects: [
+          {
+            id: 'd1',
+            timestamp: 1.0,
+            jointName: 'right_elbow',
+            currentValue: 140,
+            standardRange: [160], // invalid tuple length
+            message: 'Bad range',
+            severity: 'moderate',
+          },
+        ],
+        angleTimeSeries: {
+          jointName: 'right_elbow',
+          points: [],
+        },
+      })
+    ).toThrowError(/defects\.0\.standardRange/);
+
+    expect(() =>
+      validateAnalysisResponse({
+        analysisId: 'ana-bad-keypoint',
+        source: 'backend',
+        actionType: 'straight_punch',
+        totalScore: 88,
+        defects: [],
+        frames: [
+          {
+            t: 0.5,
+            keypoints: [{ name: 'right_elbow', x: 1.5, y: 0.5 }], // x > 1 out of normalized range
+          },
+        ],
+        angleTimeSeries: {
+          jointName: 'right_elbow',
+          points: [],
+        },
+      })
+    ).toThrowError(/frames\.0\.keypoints\.0\.x/);
   });
 
   it('throws ApiClientError with INVALID_PAYLOAD on malformed backend JSON', () => {

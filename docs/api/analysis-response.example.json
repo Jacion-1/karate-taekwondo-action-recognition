@@ -1,0 +1,83 @@
+{
+  "analysisId": "ana-20261019-001",
+  "videoId": "vid-1729327200",
+  "source": "backend",
+  "modelVersion": "mediapipe-stgcn-v1.0",
+  "fps": 30,
+  "actionType": "roundhouse_kick",
+  "confidence": 95.8,
+  "totalScore": 88,
+  "grade": "A",
+  "duration": 3.2,
+  "feedbackSummary": "系統經資料庫特徵比對識別為「跆拳道・迴旋踢 (Dollyo-Chagi)」（信心度 95.8%）。提膝高度充足，但在彈踢瞬間右膝伸展角度差約 6 度。",
+  "strengths": [
+    "起腿提膝（Chamber）高度與摺疊角度精準達標，具備良好隱蔽性",
+    "上半身防禦架勢於起腿階段保持穩定，未出現大幅後仰失衡"
+  ],
+  "keyframes": {
+    "preparation": 0.8,
+    "impact": 1.6,
+    "recovery": 2.3
+  },
+  "metrics": {
+    "stability": 89,
+    "explosiveness": 86
+  },
+  "frames": [
+    {
+      "t": 0.0,
+      "keypoints": [
+        { "name": "hip", "x": 0.4531, "y": 0.5694, "visibility": 0.99 },
+        { "name": "right_knee", "x": 0.4938, "y": 0.5694, "visibility": 0.98 },
+        { "name": "right_ankle", "x": 0.4938, "y": 0.8333, "visibility": 0.97 }
+      ]
+    },
+    {
+      "t": 1.6,
+      "keypoints": [
+        { "name": "hip", "x": 0.4531, "y": 0.5694, "visibility": 0.99 },
+        { "name": "right_knee", "x": 0.5688, "y": 0.4083, "visibility": 0.96 },
+        { "name": "right_ankle", "x": 0.6906, "y": 0.3306, "visibility": 0.95 }
+      ]
+    }
+  ],
+  "defects": [
+    {
+      "id": "def-1",
+      "timestamp": 1.6,
+      "jointName": "right_knee",
+      "currentValue": 154,
+      "standardRange": [160, 176],
+      "message": "踢擊瞬間小腿鞭甩延伸不足，膝關節角度低於標準下限。",
+      "prescription": "修正建議：在支撐腳腳掌旋轉至 150° 後再啟動小腿鞭甩，利用股四頭肌爆發收縮將膝角延伸至 165° 以上。",
+      "severity": "moderate"
+    }
+  ],
+  "angleTimeSeries": {
+    "jointName": "right_knee",
+    "points": [
+      { "time": 0.0, "actualAngle": 72, "standardMin": 60, "standardMax": 78 },
+      { "time": 0.8, "actualAngle": 118, "standardMin": 110, "standardMax": 128 },
+      { "time": 1.6, "actualAngle": 154, "standardMin": 160, "standardMax": 176 },
+      { "time": 2.3, "actualAngle": 104, "standardMin": 95, "standardMax": 115 }
+    ]
+  },
+  "allJointSeries": [
+    {
+      "jointName": "right_knee",
+      "points": [
+        { "time": 0.0, "actualAngle": 72, "standardMin": 60, "standardMax": 78 },
+        { "time": 0.8, "actualAngle": 118, "standardMin": 110, "standardMax": 128 },
+        { "time": 1.6, "actualAngle": 154, "standardMin": 160, "standardMax": 176 },
+        { "time": 2.3, "actualAngle": 104, "standardMin": 95, "standardMax": 115 }
+      ]
+    },
+    {
+      "jointName": "hip",
+      "points": [
+        { "time": 0.0, "actualAngle": 96, "standardMin": 90, "standardMax": 108 },
+        { "time": 1.6, "actualAngle": 136, "standardMin": 130, "standardMax": 150 }
+      ]
+    }
+  ]
+}

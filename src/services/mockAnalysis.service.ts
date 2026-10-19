@@ -3,14 +3,17 @@ import type {
   ActionType,
   AngleTimeSeriesPoint,
   DefectItem,
+  FrameKeypoints,
   JointAngleSeries,
   JointName,
   LocalVideoRecord,
 } from '../types/martial-arts.types';
 import { videoRepository } from '../db/repositories/video.repo';
-import type {
-  IAnalysisApiClient,
-  UploadAnalyzeOptions,
+import {
+  ApiClientError,
+  validateAnalysisResponse,
+  type IAnalysisApiClient,
+  type UploadAnalyzeOptions,
 } from './apiClient.interface';
 
 /**
@@ -526,9 +529,70 @@ export const mockAnalysisService: IAnalysisApiClient & {
     const hipSeries = generateRealisticSeries('hip', effectiveDuration, actionType);
     const torsoSeries = generateRealisticSeries('torso', effectiveDuration, actionType);
 
-    const response: ActionAnalysisResponse = {
+    const sampleCount = Math.max(20, Math.floor(effectiveDuration * 10));
+    const frames: FrameKeypoints[] = [];
+    const clamp01 = (v: number) => Math.max(0, Math.min(1, Number(v.toFixed(4))));
+    for (let i = 0; i <= sampleCount; i++) {
+      const t = Number((i * 0.1).toFixed(1));
+      const progress = i / sampleCount;
+      const wave = Math.sin(progress * Math.PI);
+      const centerX = 290 / 640;
+      const hipY = 205 / 360;
+      const neckY = 132 / 360;
+
+      const isUpper =
+        actionType === 'straight_punch' ||
+        actionType === 'age_uke' ||
+        actionType === 'gedan_barai';
+
+      const rightElbowX = isUpper
+        ? clamp01((290 + 32 + wave * 38) / 640)
+        : clamp01((290 + 24) / 640);
+      const rightElbowY = isUpper
+        ? clamp01((152 - wave * 14) / 360)
+        : clamp01(162 / 360);
+      const rightWristX = isUpper
+        ? clamp01((290 + 58 + wave * 106) / 640)
+        : clamp01((290 + 36) / 640);
+      const rightWristY = isUpper ? clamp01(138 / 360) : clamp01(148 / 360);
+
+      const rightKneeX = !isUpper
+        ? clamp01((290 + 26 + wave * 48) / 640)
+        : clamp01((290 + 22) / 640);
+      const rightKneeY = !isUpper
+        ? clamp01((205 - wave * 58) / 360)
+        : clamp01(252 / 360);
+      const rightAnkleX = !isUpper
+        ? clamp01((290 + 26 + wave * 126) / 640)
+        : clamp01((290 + 38) / 640);
+      const rightAnkleY = !isUpper
+        ? clamp01((205 - wave * 86) / 360)
+        : clamp01(300 / 360);
+
+      frames.push({
+        t,
+        keypoints: [
+          { name: 'head', x: clamp01(centerX), y: clamp01(95 / 360), visibility: 0.99 },
+          { name: 'neck', x: clamp01(centerX), y: clamp01(neckY), visibility: 0.99 },
+          { name: 'hip', x: clamp01(centerX), y: clamp01(hipY), visibility: 0.99 },
+          { name: 'right_elbow', x: rightElbowX, y: rightElbowY, visibility: 0.96 },
+          { name: 'right_wrist', x: rightWristX, y: rightWristY, visibility: 0.95 },
+          { name: 'left_elbow', x: clamp01((290 - 26) / 640), y: clamp01(162 / 360), visibility: 0.92 },
+          { name: 'left_wrist', x: clamp01((290 - 14) / 640), y: clamp01(175 / 360), visibility: 0.9 },
+          { name: 'right_knee', x: rightKneeX, y: rightKneeY, visibility: 0.97 },
+          { name: 'right_ankle', x: rightAnkleX, y: rightAnkleY, visibility: 0.95 },
+          { name: 'left_knee', x: clamp01((290 - 16) / 640), y: clamp01(252 / 360), visibility: 0.96 },
+          { name: 'left_ankle', x: clamp01((290 - 28) / 640), y: clamp01(300 / 360), visibility: 0.95 },
+        ],
+      });
+    }
+
+    const rawResponse = {
       analysisId: `ana-${videoId}`,
       videoId,
+      source: 'mock' as const,
+      modelVersion: 'mock-biomechanics-v2.4',
+      fps: 30,
       actionType,
       confidence,
       totalScore,
@@ -541,13 +605,29 @@ export const mockAnalysisService: IAnalysisApiClient & {
         impact: peakTime,
         recovery: recoveryTime,
       },
+      frames,
       defects,
       angleTimeSeries: primarySeries,
       allJointSeries: [primarySeries, hipSeries, torsoSeries],
     };
 
-    await videoRepository.saveAnalysisResult(videoId, response);
-    return response;
+    try {
+      const validated = validateAnalysisResponse(rawResponse, videoId);
+      await videoRepository.saveAnalysisResult(videoId, validated);
+      return validated;
+    } catch (err) {
+      const apiErr =
+        err instanceof ApiClientError
+          ? err
+          : new ApiClientError(
+              err instanceof Error ? err.message : '模擬分析資料未通過契約驗證',
+              'INVALID_PAYLOAD'
+            );
+      await videoRepository.updateUploadStatus(videoId, 'failed', {
+        errorMessage: apiErr.message,
+      });
+      throw apiErr;
+    }
   },
 
   /**

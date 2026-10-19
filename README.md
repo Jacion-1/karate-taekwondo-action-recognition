@@ -104,21 +104,27 @@ npm run build
 ## 五、專案目錄結構說明
 
 ```text
-c:\專題
+karate-taekwondo-action-recognition/
+├── docs/
+│   └── api/
+│       ├── openapi.yaml                  # OpenAPI 3.1.0 前後端契約規格
+│       └── analysis-response.example.json # 完整回應 JSON 範例（通過 Zod Schema 驗證）
 ├── src/
 │   ├── app/
 │   │   └── App.tsx                       # 頂部導覽列與三大工作區路由狀態管理
+│   ├── contract/
+│   │   └── analysis.schema.ts            # 【單一真實來源】前後端交換規格之 Zod Schema 與推導型別
 │   ├── types/
-│   │   └── martial-arts.types.ts         # 【前後端核心型別合約】所有動作、關節、分析結果與 IndexedDB 資料結構
+│   │   └── martial-arts.types.ts         # 動作設定字典 (ACTION_METADATA) 與 IndexedDB 本地紀錄型別
 │   ├── db/
 │   │   ├── database.ts                   # Dexie.js 本地 IndexedDB 資料庫定義 (videos, analyses 雙資料表)
 │   │   └── repositories/
 │   │       └── video.repo.ts             # 封裝影片與分析報告的 CRUD 操作
 │   ├── services/
-│   │   ├── apiClient.interface.ts        # IAnalysisApiClient 統一介面、JSON 欄位驗證正規化器與生物力學計算函式
+│   │   ├── apiClient.interface.ts        # IAnalysisApiClient 統一介面、嚴格 Zod 驗證器與生物力學計算函式
 │   │   ├── analysisClient.factory.ts     # 雙模式工廠 (動態切換 Mock 模擬引擎 / HTTP 實機後端，持久化於 localStorage)
 │   │   ├── mockAnalysis.service.ts       # 內建 8 大動作生物力學時序模擬引擎與 Canvas 合成骨架範例產生器
-│   │   ├── httpAnalysis.client.ts        # 實機後端 HTTP Client (XHR multipart/form-data 支援真實上傳進度回報)
+│   │   ├── httpAnalysis.client.ts        # 實機後端 HTTP Client (支援 200 同步與 202 非同步輪詢)
 │   │   └── __tests__/                    # Vitest 單元測試
 │   ├── features/
 │   │   ├── recorder/                     # 【畫面 1】拍攝與輸入工作台 (CameraPreview, RecordingTimer, useMediaStream, useMediaRecorder)
@@ -142,7 +148,9 @@ c:\專題
 
 ## 六、給後端／AI 組員的 API 串接規格（Backend API Contract）
 
-當後端（例如 Python FastAPI / Flask + MediaPipe / YOLOv8-Pose + DTW / ST-GCN）開發完成後，請實作以下兩個端點，即可在前端右上角點擊 **「API 連線與規格」** 切換為 **「HTTP 實機後端」** 直接連通：
+完整 OpenAPI 3.1.0 規格檔位於 [`docs/api/openapi.yaml`](docs/api/openapi.yaml)，完整回應範例位於 [`docs/api/analysis-response.example.json`](docs/api/analysis-response.example.json)，前端執行期驗證 Schema 定義於 [`src/contract/analysis.schema.ts`](src/contract/analysis.schema.ts)。
+
+當後端（例如 Python FastAPI / Flask + MediaPipe / YOLOv8-Pose + DTW / ST-GCN）開發完成後，請實作以下端點，即可在前端右上角點擊 **「API 連線與規格」** 切換為 **「遠端 REST API」** 直接連通：
 
 ### 1. 健康檢查端點：`GET /api/v1/health`
 - **回應 (`200 OK`)**：
@@ -153,26 +161,45 @@ c:\專題
 }
 ```
 
-### 2. 影片上傳與動作識別評估端點：`POST /api/v1/analyze`
+### 2. 影片上傳與動作識別評估端點：`POST /api/v1/analyses`
 - **Request 格式**：`multipart/form-data`
-  - `file` (`Binary File`)：使用者拍攝或匯入的 `.webm` / `.mp4` 影片檔
-  - `videoId` (`string`)：前端產生的影片唯一識別碼
-  - `duration` (`string`)：影片秒數（例如 `"3.2"`）
-  - `actionType` (`string`, 選填)：若為 `"auto"`，代表請後端透過資料庫比對自動識別動作類別；若為特定動作代碼（如 `"roundhouse_kick"`），代表使用者鎖定專項訓練。
+  - `video` (`Binary File`, **必填**)：使用者拍攝或匯入的 `.webm` / `.mp4` / `.mov` 影片檔
+  - `clientVideoId` (`string`, **必填**)：前端產生的影片唯一識別碼
+  - `duration` (`string`, **必填**)：影片秒數（例如 `"3.2"`）
+  - `requestedActionType` (`ActionType`, **選填**)：僅在使用者手動鎖定特定專項動作時傳送（如 `"roundhouse_kick"`）；若為預設的 **AI 自動比對識別 (`auto`)** 則**不傳送**此欄位。
 
-- **Response 格式 (`200 OK`, `application/json`)**：
-  前端 [`validateAnalysisResponse()`](src/services/apiClient.interface.ts) 會自動驗證並補齊選填預設值，標準結構如下：
+- **回應模式 A — 同步模式 (`200 OK`, `application/json`)**：
+  直接回傳符合 `ActionAnalysisResponse` 結構之完整分析結果（見下方範例）。
+
+- **回應模式 B — 非同步 Job 模式 (`202 Accepted`, `application/json`)**：
+  若後端推論耗時較長，可先回傳 `202 Accepted`：
+  ```json
+  {
+    "analysisId": "ana-20261019-001",
+    "status": "processing"
+  }
+  ```
+  前端收到 `202` 後，會自動以 **1.5 秒** 間隔輪詢 `GET /api/v1/analyses/{analysisId}`（受設定之 `timeoutMs` 與 `AbortSignal` 取消控制）：
+  - 若 `status` 為 `"processing"`：繼續等待下一次輪詢。
+  - 若 `status` 為 `"failed"`：回傳 `{ "analysisId": "...", "status": "failed", "errorMessage": "錯誤原因" }`，前端即標記為失敗並顯示錯誤原因。
+  - 若 `status` 為 `"completed"`：可回傳 `{ "analysisId": "...", "status": "completed", "result": { ...完整報告... } }` 或直接於頂層回傳完整 `ActionAnalysisResponse` 物件。
+
+- **完整分析報告結構 (`ActionAnalysisResponse`)**：
+  前端 [`validateAnalysisResponse()`](src/services/apiClient.interface.ts) 採用嚴格驗證：**必填欄位（`analysisId`、`source`、`actionType`、`totalScore`、`defects`、`angleTimeSeries`）若缺漏或型別不符，將直接拋出 `INVALID_PAYLOAD` 錯誤，絕不以假資料填充**；選填欄位若未提供則保持 `undefined`，由前端自動隱藏對應區塊。
 
 ```json
 {
   "analysisId": "ana-20261019-001",
-  "videoId": "vid-1729330000",
+  "videoId": "vid-1729327200",
+  "source": "backend",
+  "modelVersion": "mediapipe-stgcn-v1.0",
+  "fps": 30,
   "actionType": "roundhouse_kick",
   "confidence": 95.8,
-  "totalScore": 83,
-  "grade": "B",
+  "totalScore": 88,
+  "grade": "A",
   "duration": 3.2,
-  "feedbackSummary": "系統經資料庫特徵比對識別為「跆拳道・迴旋踢 (Dollyo-Chagi)」（信心度 95.8%）。提膝高度充足，但在彈踢瞬間（約 1.6 秒）右膝伸展角度差約 9 度。",
+  "feedbackSummary": "系統經資料庫特徵比對識別為「跆拳道・迴旋踢 (Dollyo-Chagi)」（信心度 95.8%）。提膝高度充足，但在彈踢瞬間右膝伸展角度差約 6 度。",
   "strengths": [
     "起腿提膝（Chamber）高度與摺疊角度精準達標，具備良好隱蔽性",
     "上半身防禦架勢於起腿階段保持穩定，未出現大幅後仰失衡"
@@ -182,46 +209,60 @@ c:\專題
     "impact": 1.6,
     "recovery": 2.3
   },
+  "metrics": {
+    "stability": 89,
+    "explosiveness": 86
+  },
+  "frames": [
+    {
+      "t": 1.6,
+      "keypoints": [
+        { "name": "hip", "x": 0.4531, "y": 0.5694, "visibility": 0.99 },
+        { "name": "right_knee", "x": 0.5688, "y": 0.4083, "visibility": 0.96 },
+        { "name": "right_ankle", "x": 0.6906, "y": 0.3306, "visibility": 0.95 }
+      ]
+    }
+  ],
   "defects": [
     {
       "id": "def-1",
       "timestamp": 1.6,
       "jointName": "right_knee",
-      "currentValue": 151,
+      "currentValue": 154,
       "standardRange": [160, 176],
       "message": "踢擊瞬間小腿鞭甩延伸不足，膝關節角度低於標準下限。",
       "prescription": "修正建議：在支撐腳腳掌旋轉至 150° 後再啟動小腿鞭甩，利用股四頭肌爆發收縮將膝角延伸至 165° 以上。",
-      "severity": "critical"
+      "severity": "moderate"
     }
   ],
   "angleTimeSeries": {
     "jointName": "right_knee",
     "points": [
-      { "time": 0.0, "actualAngle": 68, "standardMin": 60, "standardMax": 78 },
-      { "time": 0.8, "actualAngle": 115, "standardMin": 110, "standardMax": 128 },
-      { "time": 1.6, "actualAngle": 151, "standardMin": 160, "standardMax": 176 },
-      { "time": 2.3, "actualAngle": 102, "standardMin": 95, "standardMax": 115 }
+      { "time": 0.0, "actualAngle": 72, "standardMin": 60, "standardMax": 78 },
+      { "time": 0.8, "actualAngle": 118, "standardMin": 110, "standardMax": 128 },
+      { "time": 1.6, "actualAngle": 154, "standardMin": 160, "standardMax": 176 },
+      { "time": 2.3, "actualAngle": 104, "standardMin": 95, "standardMax": 115 }
     ]
   },
   "allJointSeries": [
     {
       "jointName": "right_knee",
-      "points": []
-    },
-    {
-      "jointName": "hip",
-      "points": []
-    },
-    {
-      "jointName": "torso",
-      "points": []
+      "points": [
+        { "time": 0.0, "actualAngle": 72, "standardMin": 60, "standardMax": 78 },
+        { "time": 0.8, "actualAngle": 118, "standardMin": 110, "standardMax": 128 },
+        { "time": 1.6, "actualAngle": 154, "standardMin": 160, "standardMax": 176 },
+        { "time": 2.3, "actualAngle": 104, "standardMin": 95, "standardMax": 115 }
+      ]
     }
   ]
 }
 ```
 
 #### 支援的欄位列舉值：
+- **`source`**：`'backend'` | `'mock'`
 - **`actionType`**：`'straight_punch'` | `'age_uke'` | `'gedan_barai'` | `'front_kick'` | `'roundhouse_kick'` | `'side_kick'` | `'back_kick'` | `'axe_kick'`
 - **`jointName`**：`'left_elbow'` | `'right_elbow'` | `'left_knee'` | `'right_knee'` | `'hip'` | `'torso'`
 - **`severity`**：`'minor'` | `'moderate'` | `'critical'`
 - **`grade`**：`'A'` | `'B'` | `'C'` | `'D'`
+- **`frames[].keypoints[]`**：座標 `x`、`y` 為相對影片畫面寬高之 `0–1` 正規化數值。
+

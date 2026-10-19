@@ -21,12 +21,29 @@ interface ApiConnectionDrawerProps {
 const SAMPLE_CONTRACT_JSON = `{
   "analysisId": "ana-20261019-001",
   "videoId": "vid-1729327200",
+  "source": "backend",
+  "modelVersion": "mediapipe-stgcn-v1.0",
+  "fps": 30,
   "actionType": "roundhouse_kick",
   "confidence": 95.8,
   "totalScore": 88,
   "grade": "A",
   "duration": 3.2,
-  "feedbackSummary": "經資料庫比對識別為跆拳道・迴旋踢（信心度 95.8%），提膝與轉髖流暢，彈踢瞬間角度達標。",
+  "feedbackSummary": "系統經資料庫特徵比對識別為「跆拳道・迴旋踢 (Dollyo-Chagi)」（信心度 95.8%）。",
+  "metrics": {
+    "stability": 89,
+    "explosiveness": 86
+  },
+  "frames": [
+    {
+      "t": 1.6,
+      "keypoints": [
+        { "name": "hip", "x": 0.4531, "y": 0.5694, "visibility": 0.99 },
+        { "name": "right_knee", "x": 0.5688, "y": 0.4083, "visibility": 0.96 },
+        { "name": "right_ankle", "x": 0.6906, "y": 0.3306, "visibility": 0.95 }
+      ]
+    }
+  ],
   "defects": [
     {
       "id": "def-1",
@@ -34,14 +51,16 @@ const SAMPLE_CONTRACT_JSON = `{
       "jointName": "right_knee",
       "currentValue": 154,
       "standardRange": [160, 176],
-      "message": "踢擊頂點膝關節伸展不足 6 度",
+      "message": "踢擊瞬間小腿鞭甩延伸不足，膝關節角度低於標準下限。",
+      "prescription": "修正建議：在支撐腳腳掌旋轉至 150° 後再啟動小腿鞭甩。",
       "severity": "moderate"
     }
   ],
   "angleTimeSeries": {
     "jointName": "right_knee",
     "points": [
-      { "time": 0.0, "actualAngle": 72, "standardMin": 65, "standardMax": 80 }
+      { "time": 0.0, "actualAngle": 72, "standardMin": 60, "standardMax": 78 },
+      { "time": 1.6, "actualAngle": 154, "standardMin": 160, "standardMax": 176 }
     ]
   }
 }`;
@@ -264,7 +283,7 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
           <div className="space-y-3 pt-2 border-t border-white/[0.06]">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-zinc-400">
-                API 回應格式規格 (`POST /api/v1/analyses`)
+                API 規格 (`POST /api/v1/analyses`)
               </label>
               <button
                 type="button"
@@ -283,6 +302,22 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
                   </>
                 )}
               </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/[0.05] text-[11px] text-zinc-400 space-y-1">
+              <div>
+                <span className="text-zinc-200 font-mono">Multipart 欄位：</span>
+                <code className="text-zinc-300">video</code> (File)、
+                <code className="text-zinc-300">clientVideoId</code>、
+                <code className="text-zinc-300">duration</code>、選填{' '}
+                <code className="text-zinc-300">requestedActionType</code>
+              </div>
+              <div>
+                <span className="text-zinc-200 font-mono">回應模式：</span>
+                支援 <code className="text-zinc-300">200 OK</code> 同步回傳，或{' '}
+                <code className="text-zinc-300">202 Accepted</code> 輪詢{' '}
+                <code className="text-zinc-300">GET /api/v1/analyses/&#123;analysisId&#125;</code>
+              </div>
             </div>
 
             <pre className="p-4 rounded-2xl bg-zinc-900/70 border border-white/[0.06] text-[11px] font-mono text-zinc-300 overflow-x-auto leading-relaxed">

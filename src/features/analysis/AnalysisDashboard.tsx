@@ -210,11 +210,8 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   }
 
   const actionMeta = ACTION_METADATA[analysis.actionType];
-  const keyframes = analysis.keyframes ?? {
-    preparation: Number((analysis.duration * 0.25).toFixed(1)),
-    impact: Number((analysis.duration * 0.5).toFixed(1)),
-    recovery: Number((analysis.duration * 0.72).toFixed(1)),
-  };
+  const keyframes = analysis.keyframes;
+  const displayDuration = analysis.duration ?? videoRecord?.duration ?? 0;
 
   return (
     <div className="space-y-8">
@@ -240,9 +237,11 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             <span className="text-xs text-zinc-400">
               {actionMeta.martialArt}
             </span>
-            <span className="text-xs font-mono text-emerald-400">
-              信心度 {analysis.confidence ?? 95.8}%
-            </span>
+            {analysis.confidence !== undefined && (
+              <span className="text-xs font-mono text-emerald-400">
+                信心度 {analysis.confidence}%
+              </span>
+            )}
           </div>
         </div>
 
@@ -277,9 +276,11 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             <span className="text-xl font-semibold text-white">
               {actionMeta.label}
             </span>
-            <span className="text-xs font-mono text-emerald-400 tabular-nums">
-              {analysis.confidence ?? 95.8}%
-            </span>
+            {analysis.confidence !== undefined && (
+              <span className="text-xs font-mono text-emerald-400 tabular-nums">
+                {analysis.confidence}%
+              </span>
+            )}
           </div>
           <div className="text-[11px] text-zinc-500 mt-0.5">
             {actionMeta.martialArt}標準模型
@@ -416,37 +417,40 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
               {/* 右上角時間點 */}
               <div className="pointer-events-none absolute top-3 right-3 px-2.5 py-1 rounded-md bg-zinc-950/80 font-mono text-[11px] text-zinc-300 tabular-nums">
-                {currentTime.toFixed(2)}s / {analysis.duration.toFixed(1)}s
+                {currentTime.toFixed(2)}s
+                {displayDuration > 0 ? ` / ${displayDuration.toFixed(1)}s` : ''}
               </div>
             </div>
 
-            {/* Kinovea 動作三階段關鍵幀快速定位列 (Keyframes) */}
-            <div className="px-4 py-2.5 bg-zinc-950/50 border-t border-white/[0.05] flex items-center justify-between gap-2 text-xs">
-              <span className="text-[11px] text-zinc-500">動作階段定位</span>
-              <div className="flex items-center gap-1.5">
-                {[
-                  { label: '蓄力期', time: keyframes.preparation },
-                  { label: '擊打頂點', time: keyframes.impact },
-                  { label: '收勢回防', time: keyframes.recovery },
-                ].map((kf) => {
-                  const isActive = Math.abs(currentTime - kf.time) < 0.2;
-                  return (
-                    <button
-                      key={kf.label}
-                      type="button"
-                      onClick={() => handleSeekToTime(kf.time)}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-mono transition ${
-                        isActive
-                          ? 'bg-zinc-200 text-zinc-950 font-medium'
-                          : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-white/[0.05]'
-                      }`}
-                    >
-                      {kf.label} {kf.time.toFixed(1)}s
-                    </button>
-                  );
-                })}
+            {/* Kinovea 動作三階段關鍵幀快速定位列 (Keyframes) — 僅在後端提供 keyframes 時顯示 */}
+            {keyframes && (
+              <div className="px-4 py-2.5 bg-zinc-950/50 border-t border-white/[0.05] flex items-center justify-between gap-2 text-xs">
+                <span className="text-[11px] text-zinc-500">動作階段定位</span>
+                <div className="flex items-center gap-1.5">
+                  {[
+                    { label: '蓄力期', time: keyframes.preparation },
+                    { label: '擊打頂點', time: keyframes.impact },
+                    { label: '收勢回防', time: keyframes.recovery },
+                  ].map((kf) => {
+                    const isActive = Math.abs(currentTime - kf.time) < 0.2;
+                    return (
+                      <button
+                        key={kf.label}
+                        type="button"
+                        onClick={() => handleSeekToTime(kf.time)}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-mono transition ${
+                          isActive
+                            ? 'bg-zinc-200 text-zinc-950 font-medium'
+                            : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-white/[0.05]'
+                        }`}
+                      >
+                        {kf.label} {kf.time.toFixed(1)}s
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 乾淨的播放與慢動作控制列 */}
             <div className="p-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.05]">
@@ -515,34 +519,47 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             </div>
           </div>
 
-          {/* JAB AI / Sensei AI 教練筆記與動作亮點卡片 */}
-          <div className="lab-card p-6 space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-xs font-medium text-zinc-400">教練評估總結</h3>
-              <p className="text-sm text-zinc-200 leading-relaxed">
-                {analysis.feedbackSummary}
-              </p>
-            </div>
-
-            {analysis.strengths && analysis.strengths.length > 0 && (
-              <div className="pt-4 border-t border-white/[0.06] space-y-2">
-                <div className="text-xs font-medium text-zinc-400">
-                  動作表現亮點
+          {/* JAB AI / Sensei AI 教練筆記與動作亮點卡片 — 僅在有回傳對應欄位時顯示 */}
+          {(analysis.feedbackSummary ||
+            (analysis.strengths && analysis.strengths.length > 0)) && (
+            <div className="lab-card p-6 space-y-4">
+              {analysis.feedbackSummary && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-medium text-zinc-400">
+                    教練評估總結
+                  </h3>
+                  <p className="text-sm text-zinc-200 leading-relaxed">
+                    {analysis.feedbackSummary}
+                  </p>
                 </div>
-                <ul className="space-y-1.5">
-                  {analysis.strengths.map((str, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-2 text-xs text-zinc-300 leading-relaxed"
-                    >
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                      <span>{str}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+              )}
+
+              {analysis.strengths && analysis.strengths.length > 0 && (
+                <div
+                  className={`${
+                    analysis.feedbackSummary
+                      ? 'pt-4 border-t border-white/[0.06]'
+                      : ''
+                  } space-y-2`}
+                >
+                  <div className="text-xs font-medium text-zinc-400">
+                    動作表現亮點
+                  </div>
+                  <ul className="space-y-1.5">
+                    {analysis.strengths.map((str, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-start gap-2 text-xs text-zinc-300 leading-relaxed"
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <span>{str}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 右欄 (7 cols)：Uplift 時序曲線與 Sensei 具體修正處方 */}

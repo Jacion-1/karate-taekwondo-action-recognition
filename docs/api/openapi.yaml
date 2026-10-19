@@ -1,0 +1,357 @@
+openapi: 3.1.0
+info:
+  title: Karate & Taekwondo Action Recognition & Biomechanics API
+  version: 1.0.0
+  description: >
+    空手道與跆拳道動作識別評估系統前後端契約規格。
+    支援同步回傳 (200 OK) 與非同步工作輪詢 (202 Accepted + GET /api/v1/analyses/{analysisId})。
+servers:
+  - url: http://localhost:8000
+    description: 本地開發後端伺服器
+
+paths:
+  /api/v1/health:
+    get:
+      summary: 後端服務健康檢查
+      operationId: getHealth
+      responses:
+        '200':
+          description: 服務正常運作
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - message
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  message:
+                    type: string
+
+  /api/v1/analyses:
+    post:
+      summary: 上傳動作影片並執行空手道／跆拳道動作識別與關節角度分析
+      operationId: createAnalysis
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - video
+                - clientVideoId
+                - duration
+              properties:
+                video:
+                  type: string
+                  format: binary
+                  description: 拍攝或匯入之視訊檔案 (.webm / .mp4 / .mov)
+                clientVideoId:
+                  type: string
+                  description: 前端產生之影片唯一識別碼
+                duration:
+                  type: string
+                  description: 影片秒數（字串格式，例如 "3.2"）
+                requestedActionType:
+                  $ref: '#/components/schemas/ActionType'
+                  description: 選填；僅在使用者手動鎖定特定專項動作時傳送。若為自動比對識別 (auto) 則不傳送此欄位。
+      responses:
+        '200':
+          description: 同步模式 — 直接回傳完整動作識別與關節角度分析報告
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionAnalysisResponse'
+        '202':
+          description: 非同步 Job 模式 — 任務已排入佇列，前端將以 1.5 秒間隔輪詢 GET /api/v1/analyses/{analysisId}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisJobStatus'
+
+  /api/v1/analyses/{analysisId}:
+    get:
+      summary: 查詢非同步分析任務狀態或取得已完成之分析報告
+      operationId: getAnalysisById
+      parameters:
+        - name: analysisId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 回傳目前任務狀態 (processing / failed) 或已完成之完整分析報告 (completed)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AnalysisJobStatus'
+                  - $ref: '#/components/schemas/ActionAnalysisResponse'
+
+components:
+  schemas:
+    ActionType:
+      type: string
+      enum:
+        - straight_punch
+        - age_uke
+        - gedan_barai
+        - front_kick
+        - roundhouse_kick
+        - side_kick
+        - back_kick
+        - axe_kick
+
+    JointName:
+      type: string
+      enum:
+        - left_elbow
+        - right_elbow
+        - left_knee
+        - right_knee
+        - hip
+        - torso
+
+    SeverityLevel:
+      type: string
+      enum:
+        - minor
+        - moderate
+        - critical
+
+    GradeLevel:
+      type: string
+      enum:
+        - A
+        - B
+        - C
+        - D
+
+    AnalysisSource:
+      type: string
+      enum:
+        - backend
+        - mock
+
+    AnalysisJobStatus:
+      type: object
+      required:
+        - analysisId
+        - status
+      properties:
+        analysisId:
+          type: string
+        status:
+          type: string
+          enum:
+            - processing
+            - completed
+            - failed
+        errorMessage:
+          type: string
+        result:
+          $ref: '#/components/schemas/ActionAnalysisResponse'
+
+    DefectItem:
+      type: object
+      required:
+        - id
+        - timestamp
+        - jointName
+        - currentValue
+        - standardRange
+        - message
+        - severity
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: number
+          minimum: 0
+        jointName:
+          $ref: '#/components/schemas/JointName'
+        currentValue:
+          type: number
+        standardRange:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+        message:
+          type: string
+        prescription:
+          type: string
+        severity:
+          $ref: '#/components/schemas/SeverityLevel'
+
+    AngleTimeSeriesPoint:
+      type: object
+      required:
+        - time
+        - actualAngle
+        - standardMin
+        - standardMax
+      properties:
+        time:
+          type: number
+          minimum: 0
+        actualAngle:
+          type: number
+        standardMin:
+          type: number
+        standardMax:
+          type: number
+        standardBand:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+
+    JointAngleSeries:
+      type: object
+      required:
+        - jointName
+        - points
+      properties:
+        jointName:
+          $ref: '#/components/schemas/JointName'
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/AngleTimeSeriesPoint'
+
+    ActionKeyframes:
+      type: object
+      required:
+        - preparation
+        - impact
+        - recovery
+      properties:
+        preparation:
+          type: number
+          minimum: 0
+        impact:
+          type: number
+          minimum: 0
+        recovery:
+          type: number
+          minimum: 0
+
+    KeypointItem:
+      type: object
+      required:
+        - name
+        - x
+        - y
+      properties:
+        name:
+          type: string
+        x:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 相對影片畫面寬度之 0–1 正規化水平座標
+        y:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 相對影片畫面高度之 0–1 正規化垂直座標
+        visibility:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    FrameKeypoints:
+      type: object
+      required:
+        - t
+        - keypoints
+      properties:
+        t:
+          type: number
+          minimum: 0
+          description: 影格時間點（秒）
+        keypoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/KeypointItem'
+
+    MeasuredMetrics:
+      type: object
+      properties:
+        stability:
+          type: number
+          minimum: 0
+          maximum: 100
+        explosiveness:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    ActionAnalysisResponse:
+      type: object
+      required:
+        - analysisId
+        - source
+        - actionType
+        - totalScore
+        - defects
+        - angleTimeSeries
+      properties:
+        analysisId:
+          type: string
+        videoId:
+          type: string
+        source:
+          $ref: '#/components/schemas/AnalysisSource'
+        modelVersion:
+          type: string
+        fps:
+          type: number
+          exclusiveMinimum: 0
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 100
+        totalScore:
+          type: number
+          minimum: 0
+          maximum: 100
+        grade:
+          $ref: '#/components/schemas/GradeLevel'
+        duration:
+          type: number
+          exclusiveMinimum: 0
+        feedbackSummary:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        keyframes:
+          $ref: '#/components/schemas/ActionKeyframes'
+        metrics:
+          $ref: '#/components/schemas/MeasuredMetrics'
+        frames:
+          type: array
+          items:
+            $ref: '#/components/schemas/FrameKeypoints'
+        defects:
+          type: array
+          items:
+            $ref: '#/components/schemas/DefectItem'
+        angleTimeSeries:
+          $ref: '#/components/schemas/JointAngleSeries'
+        allJointSeries:
+          type: array
+          items:
+            $ref: '#/components/schemas/JointAngleSeries'

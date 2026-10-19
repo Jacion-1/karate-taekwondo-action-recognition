@@ -1,22 +1,43 @@
 // ============================================================================
 // 空手道與跆拳道動作識別系統 — 前後端資料交換規格與核心型別合約
+// 回應結構型別統一由 src/contract/analysis.schema.ts 之 Zod Schema 產生
 // ============================================================================
+
+import type {
+  ActionAnalysisResponse,
+  ActionKeyframes,
+  ActionType,
+  AnalysisSource,
+  AngleTimeSeriesPoint,
+  DefectItem,
+  FrameKeypoints,
+  GradeLevel,
+  JointAngleSeries,
+  JointName,
+  KeypointItem,
+  MeasuredMetrics,
+  SeverityLevel,
+} from '../contract/analysis.schema';
+
+export type {
+  ActionAnalysisResponse,
+  ActionKeyframes,
+  ActionType,
+  AnalysisSource,
+  AngleTimeSeriesPoint,
+  DefectItem,
+  FrameKeypoints,
+  GradeLevel,
+  JointAngleSeries,
+  JointName,
+  KeypointItem,
+  MeasuredMetrics,
+  SeverityLevel,
+};
 
 // 1. 任務與連線狀態及共用基礎型別
 export type NetworkStatus = 'online' | 'offline';
 export type UploadStatus = 'local_saved' | 'uploading' | 'processing' | 'completed' | 'failed';
-export type ActionType =
-  | 'straight_punch'
-  | 'age_uke'
-  | 'gedan_barai'
-  | 'front_kick'
-  | 'roundhouse_kick'
-  | 'side_kick'
-  | 'back_kick'
-  | 'axe_kick';
-export type JointName = 'left_elbow' | 'right_elbow' | 'left_knee' | 'right_knee' | 'hip' | 'torso';
-export type SeverityLevel = 'minor' | 'moderate' | 'critical';
-export type GradeLevel = 'A' | 'B' | 'C' | 'D';
 export type VideoSourceType = 'camera' | 'file_import' | 'synthetic_demo';
 
 // 空手道與跆拳道動作設定字典（涵蓋 WKF 空手道基本功／組手與 WT 跆拳道品勢／競技核心技術）
@@ -134,7 +155,6 @@ export const JOINT_LABELS: Record<JointName, string> = {
 };
 
 // 2. 本地儲存影片結構 (IndexedDB: videos table)
-// 拍攝或匯入時 actionType 為 undefined（待系統自動識別），分析完成後寫入識別出的動作類別
 export interface LocalVideoRecord {
   id: string;
   blob: Blob;
@@ -151,58 +171,7 @@ export interface LocalVideoRecord {
   fileName?: string;
 }
 
-// 3. 動作評估瑕疵與具體教練修正建議項目 (Sensei AI / JAB AI 結構)
-export interface DefectItem {
-  id: string;
-  timestamp: number;
-  jointName: JointName;
-  currentValue: number;
-  standardRange: [number, number];
-  message: string;
-  prescription?: string;
-  severity: SeverityLevel;
-}
-
-// 4. 時序關節角度採樣點
-export interface AngleTimeSeriesPoint {
-  time: number;
-  actualAngle: number;
-  standardMin: number;
-  standardMax: number;
-  standardBand?: [number, number];
-}
-
-// 5. 單一關節時序資料包
-export interface JointAngleSeries {
-  jointName: JointName;
-  points: AngleTimeSeriesPoint[];
-}
-
-// 動作三階段關鍵時間點（Kinovea 關鍵幀快速定位）
-export interface ActionKeyframes {
-  preparation: number;
-  impact: number;
-  recovery: number;
-}
-
-// 6. 完整分析結果回應（包含資料庫動作比對識別結果、信心度、亮點與關鍵幀）
-export interface ActionAnalysisResponse {
-  analysisId: string;
-  videoId: string;
-  actionType: ActionType;
-  confidence: number;
-  totalScore: number;
-  grade: GradeLevel;
-  duration: number;
-  feedbackSummary: string;
-  strengths?: string[];
-  keyframes?: ActionKeyframes;
-  defects: DefectItem[];
-  angleTimeSeries: JointAngleSeries;
-  allJointSeries?: JointAngleSeries[];
-}
-
-// 7. 細項評估指標
+// 3. 細項評估指標
 export interface BiomechanicsSubMetrics {
   complianceRate: number;
   stabilityScore: number;

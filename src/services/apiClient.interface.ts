@@ -1,11 +1,10 @@
+import {
+  ActionAnalysisPayloadSchema,
+  type ActionAnalysisResponse,
+  type GradeLevel,
+} from '../contract/analysis.schema';
 import type {
-  ActionAnalysisResponse,
-  ActionType,
   BiomechanicsSubMetrics,
-  DefectItem,
-  GradeLevel,
-  JointAngleSeries,
-  JointName,
   LocalVideoRecord,
 } from '../types/martial-arts.types';
 
@@ -61,65 +60,16 @@ export interface IAnalysisApiClient {
   checkHealth(): Promise<{ ok: boolean; latencyMs: number; message: string }>;
 }
 
-const VALID_ACTIONS: ActionType[] = [
-  'straight_punch',
-  'age_uke',
-  'gedan_barai',
-  'front_kick',
-  'roundhouse_kick',
-  'side_kick',
-  'back_kick',
-  'axe_kick',
-];
-const VALID_GRADES: GradeLevel[] = ['A', 'B', 'C', 'D'];
-const VALID_JOINTS: JointName[] = [
-  'left_elbow',
-  'right_elbow',
-  'left_knee',
-  'right_knee',
-  'hip',
-  'torso',
-];
-
-function normalizeSeries(rawSeries: unknown): JointAngleSeries {
-  if (!rawSeries || typeof rawSeries !== 'object') {
-    throw new ApiClientError(
-      '後端回應缺少有效的 angleTimeSeries 結構',
-      'INVALID_PAYLOAD'
-    );
-  }
-  const s = rawSeries as Record<string, unknown>;
-  const jointName = VALID_JOINTS.includes(s.jointName as JointName)
-    ? (s.jointName as JointName)
-    : 'right_elbow';
-
-  if (!Array.isArray(s.points)) {
-    throw new ApiClientError(
-      'angleTimeSeries.points 必須為時序陣列',
-      'INVALID_PAYLOAD'
-    );
-  }
-
-  const points = s.points.map((pt: unknown, idx: number) => {
-    const p = (pt && typeof pt === 'object' ? pt : {}) as Record<string, unknown>;
-    const time = typeof p.time === 'number' ? p.time : Number((idx * 0.1).toFixed(1));
-    const actualAngle = typeof p.actualAngle === 'number' ? p.actualAngle : 0;
-    const standardMin = typeof p.standardMin === 'number' ? p.standardMin : 0;
-    const standardMax = typeof p.standardMax === 'number' ? p.standardMax : 180;
-    return {
-      time,
-      actualAngle,
-      standardMin,
-      standardMax,
-      standardBand: [standardMin, standardMax] as [number, number],
-    };
-  });
-
-  return { jointName, points };
+function deriveGradeFromScore(score: number): GradeLevel {
+  if (score >= 85) return 'A';
+  if (score >= 75) return 'B';
+  if (score >= 60) return 'C';
+  return 'D';
 }
 
 /**
- * 嚴格驗證並正規化後端 API 回傳的 JSON 資料，確保前端 Recharts 與報表不會因格式缺漏而崩潰
+ * 嚴格驗證後端或模擬引擎回傳的 JSON 資料（基於單一 Zod Schema）
+ * 缺漏必要欄位 (analysisId, source, actionType, totalScore, defects, angleTimeSeries) 或型別錯誤時拋出 INVALID_PAYLOAD，不填補偽造預設值
  */
 export function validateAnalysisResponse(
   raw: unknown,
@@ -129,91 +79,36 @@ export function validateAnalysisResponse(
     throw new ApiClientError('後端回傳資料為空或非 JSON 物件', 'INVALID_PAYLOAD');
   }
 
-  const obj = raw as Record<string, unknown>;
-  if (
-    typeof obj.analysisId !== 'string' ||
-    typeof obj.totalScore !== 'number' ||
-    !obj.angleTimeSeries
-  ) {
+  const parsed = ActionAnalysisPayloadSchema.safeParse(raw);
+  if (!parsed.success) {
+    const issueSummary = parsed.error.issues
+      .map((iss) => {
+        const pathStr = iss.path.length > 0 ? iss.path.join('.') : '<root>';
+        return `${pathStr}: ${iss.message}`;
+      })
+      .join('; ');
+
     throw new ApiClientError(
-      '後端回傳 JSON 缺少必要欄位 (analysisId, totalScore, angleTimeSeries)',
+      `後端回傳 JSON 未通過契約驗證 (${issueSummary})`,
       'INVALID_PAYLOAD',
       undefined,
-      raw
+      parsed.error.issues
     );
   }
 
-  const primarySeries = normalizeSeries(obj.angleTimeSeries);
-  const allJointSeries: JointAngleSeries[] = Array.isArray(obj.allJointSeries)
-    ? obj.allJointSeries.map(normalizeSeries)
-    : [primarySeries];
-
-  const actionType: ActionType = VALID_ACTIONS.includes(obj.actionType as ActionType)
-    ? (obj.actionType as ActionType)
-    : 'straight_punch';
-
-  const grade: GradeLevel = VALID_GRADES.includes(obj.grade as GradeLevel)
-    ? (obj.grade as GradeLevel)
-    : obj.totalScore >= 85
-      ? 'A'
-      : obj.totalScore >= 75
-        ? 'B'
-        : obj.totalScore >= 60
-          ? 'C'
-          : 'D';
-
-  const defects: DefectItem[] = Array.isArray(obj.defects)
-    ? (obj.defects as DefectItem[])
-    : [];
-
-  const rawConfidence =
-    typeof obj.confidence === 'number' && !Number.isNaN(obj.confidence)
-      ? obj.confidence
-      : 95.4;
-  const confidence = Math.max(0, Math.min(100, Math.round(rawConfidence * 10) / 10));
-  const duration =
-    typeof obj.duration === 'number' && obj.duration > 0 ? obj.duration : 3.0;
-
-  const rawKf =
-    obj.keyframes && typeof obj.keyframes === 'object'
-      ? (obj.keyframes as Record<string, unknown>)
-      : null;
-  const keyframes = {
-    preparation:
-      rawKf && typeof rawKf.preparation === 'number'
-        ? rawKf.preparation
-        : Number((duration * 0.25).toFixed(1)),
-    impact:
-      rawKf && typeof rawKf.impact === 'number'
-        ? rawKf.impact
-        : Number((duration * 0.5).toFixed(1)),
-    recovery:
-      rawKf && typeof rawKf.recovery === 'number'
-        ? rawKf.recovery
-        : Number((duration * 0.72).toFixed(1)),
-  };
-
-  const strengths: string[] =
-    Array.isArray(obj.strengths) && obj.strengths.length > 0
-      ? obj.strengths.map((s) => String(s))
-      : ['起動蓄力節奏穩定，重心轉換流暢', '發力軌跡符合標準生物力學力線'];
+  const data = parsed.data;
+  const totalScore = Math.round(data.totalScore);
+  const grade: GradeLevel = data.grade ?? deriveGradeFromScore(totalScore);
+  const allJointSeries =
+    data.allJointSeries && data.allJointSeries.length > 0
+      ? data.allJointSeries
+      : [data.angleTimeSeries];
 
   return {
-    analysisId: obj.analysisId,
-    videoId: typeof obj.videoId === 'string' ? obj.videoId : fallbackVideoId,
-    actionType,
-    confidence,
-    totalScore: Math.max(0, Math.min(100, Math.round(obj.totalScore))),
+    ...data,
+    videoId: data.videoId ?? fallbackVideoId,
+    totalScore,
     grade,
-    duration,
-    feedbackSummary:
-      typeof obj.feedbackSummary === 'string'
-        ? obj.feedbackSummary
-        : '已完成動作標準度時序分析。',
-    strengths,
-    keyframes,
-    defects,
-    angleTimeSeries: primarySeries,
     allJointSeries,
   };
 }
