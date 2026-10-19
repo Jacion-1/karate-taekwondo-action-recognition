@@ -52,7 +52,7 @@ export const videoRepository = {
   },
 
   /**
-   * 儲存後端（或模擬層）回傳的完整分析報告，並將識別出的動作類別與 completed 狀態寫回影片紀錄
+   * 儲存後端（或模擬層）回傳的完整分析報告，僅寫入 recognizedActionType 與 completed 狀態，不覆蓋 requestedActionType
    */
   async saveAnalysisResult(
     videoId: string,
@@ -64,7 +64,7 @@ export const videoRepository = {
         status: 'completed',
         uploadProgress: 100,
         analysisId: analysis.analysisId,
-        actionType: analysis.actionType,
+        recognizedActionType: analysis.actionType,
       });
     });
   },
@@ -72,7 +72,9 @@ export const videoRepository = {
   /**
    * 取得分析報告
    */
-  async getAnalysisById(analysisId: string): Promise<ActionAnalysisResponse | undefined> {
+  async getAnalysisById(
+    analysisId: string
+  ): Promise<ActionAnalysisResponse | undefined> {
     return db.analyses.get(analysisId);
   },
 };

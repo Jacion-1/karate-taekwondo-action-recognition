@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import type { LocalVideoRecord } from '../../../types/martial-arts.types';
+import type { ActionType, LocalVideoRecord } from '../../../types/martial-arts.types';
 import { videoRepository } from '../../../db/repositories/video.repo';
 import { extractVideoMetadataAndThumbnail } from '../../../shared/utils/videoMedia.utils';
 
@@ -29,7 +29,7 @@ export function useMediaRecorder(onVideoSaved?: (videoId: string) => void) {
   const startTimeRef = useRef<number>(0);
 
   const startRecording = useCallback(
-    (stream: MediaStream) => {
+    (stream: MediaStream, requestedActionType?: ActionType) => {
       if (!stream || isRecording) return;
 
       chunksRef.current = [];
@@ -66,7 +66,8 @@ export function useMediaRecorder(onVideoSaved?: (videoId: string) => void) {
           duration: elapsedSeconds,
           createdAt: Date.now(),
           status: 'local_saved',
-          actionType: undefined,
+          requestedActionType,
+          recognizedActionType: undefined,
           thumbnailDataUrl,
           sourceType: 'camera',
           fileName: `Camera-${new Date().toISOString().slice(11, 19).replace(/:/g, '')}.webm`,

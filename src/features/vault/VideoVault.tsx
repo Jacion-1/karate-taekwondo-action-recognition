@@ -76,7 +76,12 @@ const VideoVaultItemCard: React.FC<{
   const [showPreview, setShowPreview] = useState(false);
   const previewUrl = useObjectUrl(showPreview ? record.blob : null);
 
-  const meta = record.actionType ? ACTION_METADATA[record.actionType] : null;
+  const recognizedMeta = record.recognizedActionType
+    ? ACTION_METADATA[record.recognizedActionType]
+    : null;
+  const requestedMeta = record.requestedActionType
+    ? ACTION_METADATA[record.requestedActionType]
+    : null;
   const statusInfo = STATUS_DOT[record.status];
   const sizeMB = (record.blob.size / (1024 * 1024)).toFixed(2);
   const isBusy = record.status === 'uploading' || record.status === 'processing';
@@ -100,7 +105,7 @@ const VideoVaultItemCard: React.FC<{
             <>
               <img
                 src={record.thumbnailDataUrl}
-                alt={meta ? meta.label : '待識別動作影片'}
+                alt={recognizedMeta ? recognizedMeta.label : '待識別動作影片'}
                 className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition duration-200"
               />
               <button
@@ -136,18 +141,29 @@ const VideoVaultItemCard: React.FC<{
         {/* 標題與狀態圓點 */}
         <div className="flex items-start justify-between gap-2 mb-1">
           <div>
-            {meta ? (
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-white">{meta.label}</h3>
-                <span className="text-xs text-zinc-500">{meta.martialArt}</span>
+            {recognizedMeta ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-semibold text-white">
+                  {recognizedMeta.label}
+                </h3>
+                <span className="text-xs text-zinc-500">
+                  {recognizedMeta.martialArt}
+                </span>
+                {requestedMeta && (
+                  <span className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono text-zinc-400">
+                    鎖定：{requestedMeta.shortLabel}
+                  </span>
+                )}
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-semibold text-zinc-200">
                   待系統識別動作
                 </h3>
                 <span className="text-[11px] text-zinc-500">
-                  分析時自動比對資料庫
+                  {requestedMeta
+                    ? `已鎖定專項：${requestedMeta.label}`
+                    : '分析時自動比對資料庫'}
                 </span>
               </div>
             )}
@@ -274,11 +290,13 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
   const filteredVideos = useMemo(() => {
     if (!videos) return [];
     return videos.filter((v) => {
-      if (actionFilter === 'UNIDENTIFIED' && v.actionType !== undefined) return false;
+      if (actionFilter === 'UNIDENTIFIED' && v.recognizedActionType !== undefined) {
+        return false;
+      }
       if (
         actionFilter !== 'ALL' &&
         actionFilter !== 'UNIDENTIFIED' &&
-        v.actionType !== actionFilter
+        v.recognizedActionType !== actionFilter
       ) {
         return false;
       }
@@ -293,9 +311,11 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
     try {
       const result = await client.uploadAndAnalyzeVideo(record);
       const recognizedLabel = ACTION_METADATA[result.actionType].label;
+      const confText =
+        result.confidence !== undefined ? `信心度 ${result.confidence}% · ` : '';
       pushToast({
         type: 'success',
-        title: `識別為「${recognizedLabel}」（信心度 ${result.confidence}% · 評分 ${result.totalScore}）`,
+        title: `識別為「${recognizedLabel}」（${confText}評分 ${result.totalScore}）`,
       });
       onOpenAnalysis(record.id, result.analysisId);
     } catch (err) {

@@ -431,8 +431,8 @@ export class HttpRestAnalysisClient implements IAnalysisApiClient {
         video.blob,
         video.fileName || `motion-${video.id}.${ext}`
       );
-      if (video.actionType) {
-        formData.append('requestedActionType', video.actionType);
+      if (video.requestedActionType) {
+        formData.append('requestedActionType', video.requestedActionType);
       }
       formData.append('duration', String(video.duration));
       formData.append('clientVideoId', video.id);

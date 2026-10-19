@@ -1,5 +1,27 @@
-import Dexie, { type EntityTable } from 'dexie';
+import Dexie, { type EntityTable, type Transaction } from 'dexie';
 import type { LocalVideoRecord, ActionAnalysisResponse } from '../types/martial-arts.types';
+
+/**
+ * Dexie v1 -> v2 資料遷移邏輯：
+ * - 若舊紀錄已有 analysisId，代表已完成辨識，將舊 actionType 搬移至 recognizedActionType
+ * - 若舊紀錄尚無 analysisId，代表為拍攝時鎖定的動作，將舊 actionType 搬移至 requestedActionType
+ * - 移除舊有混淆的 actionType 欄位
+ */
+export async function upgradeVideosV1ToV2(tx: Transaction): Promise<void> {
+  await tx
+    .table('videos')
+    .toCollection()
+    .modify((record: Record<string, unknown>) => {
+      if ('actionType' in record && record.actionType !== undefined) {
+        if (record.analysisId) {
+          record.recognizedActionType = record.actionType;
+        } else {
+          record.requestedActionType = record.actionType;
+        }
+      }
+      delete record.actionType;
+    });
+}
 
 /**
  * 本機 IndexedDB 資料庫封裝 (Dexie.js)
@@ -9,14 +31,21 @@ export class MartialArtsDatabase extends Dexie {
   videos!: EntityTable<LocalVideoRecord, 'id'>;
   analyses!: EntityTable<ActionAnalysisResponse, 'analysisId'>;
 
-  constructor() {
-    super('MartialArtsEvaluatorDB');
+  constructor(dbName = 'MartialArtsEvaluatorDB') {
+    super(dbName);
 
     this.version(1).stores({
-      // 只對需要查詢與排序的輕量欄位建立索引，blob 不建立索引以維持極致寫入效能
       videos: 'id, createdAt, status, actionType, analysisId',
       analyses: 'analysisId, videoId, actionType, grade',
     });
+
+    this.version(2)
+      .stores({
+        videos:
+          'id, createdAt, status, requestedActionType, recognizedActionType, analysisId',
+        analyses: 'analysisId, videoId, actionType, grade',
+      })
+      .upgrade(upgradeVideosV1ToV2);
   }
 }
 

@@ -88,9 +88,10 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
       return;
     }
 
+    const requested = recognitionMode === 'auto' ? undefined : recognitionMode;
     setRecentSavedId(null);
     if (!useCountdown) {
-      startRecording(stream);
+      startRecording(stream, requested);
       return;
     }
 
@@ -101,7 +102,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
       if (remaining <= 0) {
         clearInterval(timer);
         setCountdownSeconds(null);
-        startRecording(stream);
+        startRecording(stream, requested);
       } else {
         setCountdownSeconds(remaining);
       }
@@ -137,15 +138,17 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
       if (!record) return;
       const targetRecord: LocalVideoRecord =
         recognitionMode !== 'auto'
-          ? { ...record, actionType: recognitionMode }
+          ? { ...record, requestedActionType: recognitionMode }
           : record;
       const result = await analysisClientFactory
         .getClient()
         .uploadAndAnalyzeVideo(targetRecord);
       const label = ACTION_METADATA[result.actionType].label;
+      const confText =
+        result.confidence !== undefined ? `信心度 ${result.confidence}% · ` : '';
       pushToast({
         type: 'success',
-        title: `識別為「${label}」（信心度 ${result.confidence}% · 評分 ${result.totalScore}）`,
+        title: `識別為「${label}」（${confText}評分 ${result.totalScore}）`,
       });
       onOpenAnalysis(record.id, result.analysisId);
     } catch (err) {
@@ -185,7 +188,8 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
         duration,
         createdAt: Date.now(),
         status: 'local_saved',
-        actionType: recognitionMode === 'auto' ? undefined : recognitionMode,
+        requestedActionType: recognitionMode === 'auto' ? undefined : recognitionMode,
+        recognizedActionType: undefined,
         thumbnailDataUrl,
         sourceType: 'file_import',
         fileName: file.name,

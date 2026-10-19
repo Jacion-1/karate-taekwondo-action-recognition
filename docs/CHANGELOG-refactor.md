@@ -14,3 +14,11 @@
 - 移除所有偽造預設值（`actionType`、`confidence`、`strengths`、`jointName`、`keyframes` 等不再於缺漏時自動捏造），必填欄位缺漏或格式錯誤一律拋出 `ApiClientError('INVALID_PAYLOAD')` 並附帶 Zod 錯誤路徑。
 - 新增 `docs/api/analysis-response.example.json` 與 `docs/api/openapi.yaml`，並於 `HttpRestAnalysisClient` 同時支援 `200 OK` 同步模式與 `202 Accepted` 非同步輪詢模式（`GET /api/v1/analyses/{analysisId}`）。
 - 設計決策說明：輪詢 `GET /api/v1/analyses/{analysisId}` 當 `status === 'completed'` 時，同時相容頂層直接回傳完整 `ActionAnalysisResponse` 或包裹於 `{ status: 'completed', result: ActionAnalysisResponse }` 兩種常見後端實作慣例，並在 `openapi.yaml` 以 `oneOf` 明確定義。
+
+---
+
+## Phase 2：拆分「使用者鎖定動作」與「AI 辨識結果」
+- `LocalVideoRecord` 移除混淆的 `actionType`，拆分為 `requestedActionType?: ActionType`（使用者鎖定專項，auto 時為 `undefined`）與 `recognizedActionType?: ActionType`（後端／模擬器辨識出的結果）。
+- `MartialArtsDatabase` 新增 `version(2)` 並實作升級函式 `upgradeVideosV1ToV2`：舊紀錄若有 `analysisId` 則將 `actionType` 遷移至 `recognizedActionType`，若無則遷移至 `requestedActionType`。
+- `videoRepository.saveAnalysisResult` 僅寫入 `recognizedActionType`，絕不覆寫 `requestedActionType`；`HttpRestAnalysisClient` 僅傳送 `requestedActionType`。
+- 新增 `fake-indexeddb`（devDependency）與 `src/db/__tests__/video.repo.test.ts` 驗證 v1→v2 資料遷移與重新分析不污染鎖定狀態。

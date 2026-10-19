@@ -127,10 +127,10 @@ function recognizeActionFromVideo(video: LocalVideoRecord): {
   actionType: ActionType;
   confidence: number;
 } {
-  if (video.actionType) {
+  if (video.requestedActionType) {
     return {
-      actionType: video.actionType,
-      confidence: ACTION_CONFIDENCE_MAP[video.actionType] ?? 95.5,
+      actionType: video.requestedActionType,
+      confidence: ACTION_CONFIDENCE_MAP[video.requestedActionType] ?? 95.5,
     };
   }
 
@@ -672,8 +672,8 @@ export const mockAnalysisService: IAnalysisApiClient & {
           duration: durationSec,
           createdAt: Date.now(),
           status: 'local_saved',
-          // 保持未標記狀態，待上傳分析時由系統比對資料庫自動識別（檔名保留特徵供模擬器辨識）
-          actionType: undefined,
+          requestedActionType: preferredAction,
+          recognizedActionType: undefined,
           thumbnailDataUrl: capturedThumbnail,
           sourceType: 'synthetic_demo',
           fileName: `MotionCapture-${simulatedAction}.webm`,

@@ -155,6 +155,8 @@ export const JOINT_LABELS: Record<JointName, string> = {
 };
 
 // 2. 本地儲存影片結構 (IndexedDB: videos table)
+// requestedActionType: 使用者手動鎖定的專項動作（undefined 代表 AI 自動比對識別）
+// recognizedActionType: 分析完成後由後端／模擬器辨識出的動作類別
 export interface LocalVideoRecord {
   id: string;
   blob: Blob;
@@ -162,7 +164,8 @@ export interface LocalVideoRecord {
   duration: number;
   createdAt: number;
   status: UploadStatus;
-  actionType?: ActionType;
+  requestedActionType?: ActionType;
+  recognizedActionType?: ActionType;
   uploadProgress?: number;
   analysisId?: string;
   errorMessage?: string;
