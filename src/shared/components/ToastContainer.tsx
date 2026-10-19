@@ -44,6 +44,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
     <ToastContext.Provider value={{ pushToast }}>
       {children}
       <div
+        role="status"
         aria-live="polite"
         className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"
       >

@@ -31,9 +31,9 @@ function generateRealisticSeries(
     const time = Number((i * 0.1).toFixed(1));
     const progress = i / sampleCount;
 
-    let standardMin = 140;
-    let standardMax = 165;
-    let actualAngle = 150;
+    let standardMin: number;
+    let standardMax: number;
+    let actualAngle: number;
 
     if (actionType === 'straight_punch' && jointName === 'right_elbow') {
       const wave = Math.sin(progress * Math.PI);
@@ -227,12 +227,12 @@ export const mockAnalysisService: IAnalysisApiClient & {
     const peakTime = Number((effectiveDuration * 0.5).toFixed(1));
     const recoveryTime = Number((effectiveDuration * 0.72).toFixed(1));
 
-    let primaryJoint: JointName = 'right_elbow';
-    let defects: DefectItem[] = [];
-    let strengths: string[] = [];
-    let feedbackSummary = '';
-    let totalScore = 86;
-    let grade: 'A' | 'B' | 'C' | 'D' = 'B';
+    let primaryJoint: JointName;
+    let defects: DefectItem[];
+    let strengths: string[];
+    let feedbackSummary: string;
+    let totalScore: number;
+    let grade: 'A' | 'B' | 'C' | 'D';
 
     switch (actionType) {
       case 'straight_punch':
@@ -730,8 +730,8 @@ export const mockAnalysisService: IAnalysisApiClient & {
         const isPeakZone = progress > 0.42 && progress < 0.58;
         ctx.strokeStyle = isPeakZone ? '#f43f5e' : '#10b981';
 
-        let jointX = centerX + 40;
-        let jointY = 150;
+        let jointX: number;
+        let jointY: number;
 
         if (
           simulatedAction === 'straight_punch' ||

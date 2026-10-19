@@ -62,6 +62,13 @@
 - 閾值出處透明化：`ACTION_METADATA` 每一項動作新增 `provenance: { status: 'heuristic-unverified' | 'cited'; citation?: string }`，現階段全部設為 `'heuristic-unverified'` 並加註 `// TODO(使用者): 填入實際文獻或教練驗證來源`；動作圖譜卡片與報告頁皆標示「初始經驗閾值，待驗證」，並同步修正 `README.md` 描述。
 - 拍攝視角通則提示：`RecordWorkspace.tsx` 依當前選擇之動作（或自動模式）顯示建議拍攝視角提示（如踢擊類建議側面拍攝、全身入鏡），並明確註明「單鏡頭 2D 角度會隨拍攝方向變形」。
 
+---
 
-
+## Phase 7：工程品質、路由、Code Splitting、無障礙與測試
+- 導入 ESLint 9 Flat Config：安裝 `eslint`、`@eslint/js`、`typescript-eslint`、`eslint-plugin-react-hooks`、`globals` 並建立 [`eslint.config.js`](../eslint.config.js)，使 `npm run lint` 可正常執行且零錯誤通過。
+- Code Splitting 與懶載入：`App.tsx` 對 `AnalysisDashboard` 採用 `React.lazy` + `Suspense`，並於 `vite.config.ts` 設定 `manualChunks`（將 `recharts` 與基礎 `vendor` 拆出），主入口 chunk 大幅縮減至 `< 500 kB`（無 Vite chunk 大小警告）。
+- Hash 路由同步：新增零外部依賴之 [`src/shared/hooks/useHashRoute.ts`](../src/shared/hooks/useHashRoute.ts)，支援 `#/record`（含 `?focus=<actionType>`）、`#/vault` 與 `#/report/:analysisId`（含 `?videoId=<videoId>`），支援重新整理保留當前報告頁面與瀏覽器上一頁／下一頁導覽。
+- 無障礙（Accessibility）：頂部導覽按鈕補齊 `aria-current="page"`；播放／暫停、逐幀步進、鏡頭翻轉、參考線開關等圖示按鈕補齊 `aria-label`；`ToastContainer` 加入 `role="status" aria-live="polite"`；`AnalysisDashboard` 空白鍵播放快捷鍵排除 `<button>`、`<a>`、`[contenteditable]` 與 `[role="slider"]` 焦點，避免雙重觸發。
+- 隱私與安全提示：首次開啟攝影機旁標示「錄製的影片預設僅儲存在此瀏覽器，只有當您點選『開始識別』且處於遠端 API 模式時才會上傳至您設定的伺服器」；`ApiConnectionDrawer` 補齊 API Key 輸入框並標註「API Key 以明文儲存在此瀏覽器的 localStorage，請勿在共用電腦輸入正式金鑰」；`README.md` 新增「七、部署注意事項」章節。
+- 完整單元測試：新增 [`src/services/__tests__/httpAnalysis.client.test.ts`](../src/services/__tests__/httpAnalysis.client.test.ts)，以 Mock `XMLHttpRequest` 與 `fetch` 涵蓋 `200 OK` 同步成功、`4xx/5xx` 錯誤、Timeout、`AbortController` 取消、非法 Payload 拒絕、`202 Accepted` 非同步輪詢與 Hash 路由解析。
 

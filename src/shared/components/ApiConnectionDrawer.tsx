@@ -241,6 +241,27 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs text-zinc-500">
+                API Key（選填，將帶入 Authorization: Bearer 標頭）
+              </label>
+              <input
+                type="password"
+                value={config.apiKey ?? ''}
+                onChange={(e) =>
+                  setConfig((prev) => ({
+                    ...prev,
+                    apiKey: e.target.value || undefined,
+                  }))
+                }
+                placeholder="留空則不傳送 Authorization 標頭"
+                className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-xs font-mono text-zinc-100 focus:outline-none focus:border-white/30"
+              />
+              <p className="text-[11px] text-amber-300/90 leading-relaxed">
+                Key 儲存在瀏覽器 localStorage，不是機密；正式環境請由後端驗證。
+              </p>
+            </div>
+
             <div className="flex items-center justify-between gap-2 pt-1">
               <button
                 type="button"

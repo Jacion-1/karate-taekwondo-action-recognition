@@ -35,7 +35,10 @@ export function useMediaRecorder(onVideoSaved?: (videoId: string) => void) {
   const startTimeRef = useRef<number>(0);
   const mountedRef = useRef<boolean>(true);
   const onVideoSavedRef = useRef(onVideoSaved);
-  onVideoSavedRef.current = onVideoSaved;
+
+  useEffect(() => {
+    onVideoSavedRef.current = onVideoSaved;
+  }, [onVideoSaved]);
 
   useEffect(() => {
     mountedRef.current = true;

@@ -68,6 +68,10 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
   const mountedRef = useRef<boolean>(true);
 
   useEffect(() => {
+    setRecognitionMode(initialFocusAction);
+  }, [initialFocusAction]);
+
+  useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
@@ -295,6 +299,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
             <div className="pointer-events-auto flex items-center gap-1.5">
               <button
                 type="button"
+                aria-label="切換倒數 3 秒開拍"
                 onClick={() => setUseCountdown((prev) => !prev)}
                 disabled={isRecording}
                 className={`px-3 py-1 rounded-full border text-xs font-medium flex items-center gap-1.5 backdrop-blur-md transition ${
@@ -310,6 +315,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
 
               <button
                 type="button"
+                aria-label="切換取景參考線"
                 onClick={() => setShowGuideGrid((prev) => !prev)}
                 className={`p-1.5 rounded-full border text-xs flex items-center backdrop-blur-md transition ${
                   showGuideGrid
@@ -324,6 +330,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
               {stream && (
                 <button
                   type="button"
+                  aria-label="切換前後鏡頭"
                   onClick={toggleFacingMode}
                   disabled={isRecording}
                   className="p-1.5 rounded-full bg-zinc-950/75 hover:bg-zinc-900 border border-white/[0.08] text-zinc-300 backdrop-blur-md disabled:opacity-40 transition"
@@ -352,6 +359,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
               <>
                 <button
                   type="button"
+                  aria-label={isRecording ? '停止錄影' : '開始錄影'}
                   onClick={handleToggleRecord}
                   disabled={countdownSeconds !== null}
                   className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-xs transition ${
@@ -375,6 +383,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                 {!isRecording && (
                   <button
                     type="button"
+                    aria-label="關閉鏡頭"
                     onClick={stopCamera}
                     className="px-3.5 py-2 rounded-full text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 transition"
                   >
@@ -411,6 +420,11 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Phase 7.7: 隱私與安全同意說明 */}
+        <p className="px-2 text-[11px] text-zinc-500">
+          影片含人體影像，將在你按下分析後才會上傳到所設定的後端。
+        </p>
 
         {/* Phase 6.4: 依動作顯示建議拍攝視角提示文字，並註明單鏡頭 2D 透視變形限制 */}
         <div className="px-4 py-3 rounded-2xl bg-zinc-900/45 border border-white/[0.06] text-xs text-zinc-400 flex flex-wrap items-center justify-between gap-2">

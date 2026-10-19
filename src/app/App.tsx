@@ -1,24 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { videoRepository } from '../db/repositories/video.repo';
 import { useNetworkStatus } from '../shared/hooks/useNetworkStatus';
+import { useHashRoute } from '../shared/hooks/useHashRoute';
 import { RecordWorkspace } from '../features/recorder/RecordWorkspace';
 import { VideoVault } from '../features/vault/VideoVault';
-import { AnalysisDashboard } from '../features/analysis/AnalysisDashboard';
 import { ToastProvider } from '../shared/components/ToastContainer';
 import { ApiConnectionDrawer } from '../shared/components/ApiConnectionDrawer';
 import { analysisClientFactory } from '../services/analysisClient.factory';
 import type { ActionType } from '../types/martial-arts.types';
 import type { ApiConnectionConfig } from '../services/apiClient.interface';
 
-type ActiveTab = 'record' | 'vault' | 'analysis';
+const LazyAnalysisDashboard = lazy(() =>
+  import('../features/analysis/AnalysisDashboard').then((m) => ({
+    default: m.AnalysisDashboard,
+  }))
+);
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('record');
-  const [focusAction, setFocusAction] = useState<ActionType | 'auto'>('auto');
-  const [selectedReport, setSelectedReport] = useState<{
+  const { route, navigateToRecord, navigateToVault, navigateToReport } =
+    useHashRoute();
+  const [lastReport, setLastReport] = useState<{
     videoId: string;
     analysisId: string;
   } | null>(null);
@@ -27,6 +31,16 @@ export const App: React.FC = () => {
     analysisClientFactory.getConfig()
   );
   const [isClientHealthy, setIsClientHealthy] = useState<boolean>(true);
+
+  // 當路由位於 /report/:analysisId 時，同步更新最近開啟的報告紀錄
+  useEffect(() => {
+    if (route.page === 'analysis' && route.analysisId) {
+      setLastReport({
+        analysisId: route.analysisId,
+        videoId: route.videoId ?? '',
+      });
+    }
+  }, [route.page, route.analysisId, route.videoId]);
 
   // 啟動時重設上次中斷殘留的 uploading / processing 紀錄，並請求持久化儲存空間
   useEffect(() => {
@@ -79,17 +93,19 @@ export const App: React.FC = () => {
   const videoCount = useLiveQuery(() => db.videos.count(), []) ?? 0;
 
   const handleOpenAnalysis = (videoId: string, analysisId: string) => {
-    setSelectedReport({ videoId, analysisId });
-    setActiveTab('analysis');
+    setLastReport({ videoId, analysisId });
+    navigateToReport(analysisId, videoId);
   };
 
   const handleReverifyAction = (actionType: ActionType) => {
-    setFocusAction(actionType);
-    setActiveTab('record');
+    navigateToRecord(actionType);
   };
 
   const canSubmitAnalysis =
     apiConfig.mode === 'mock' ? true : isClientHealthy && !simulateOffline;
+
+  const activeAnalysisId = route.analysisId ?? lastReport?.analysisId;
+  const activeVideoId = route.videoId ?? lastReport?.videoId ?? '';
 
   return (
     <ToastProvider>
@@ -106,12 +122,16 @@ export const App: React.FC = () => {
             </div>
 
             {/* 中央：分段式導覽器 */}
-            <nav className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-full border border-white/[0.06]">
+            <nav
+              aria-label="主導覽列"
+              className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-full border border-white/[0.06]"
+            >
               <button
                 type="button"
-                onClick={() => setActiveTab('record')}
+                aria-current={route.page === 'record' ? 'page' : undefined}
+                onClick={() => navigateToRecord(route.focusAction)}
                 className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  activeTab === 'record'
+                  route.page === 'record'
                     ? 'bg-white text-zinc-950 shadow-sm'
                     : 'text-zinc-400 hover:text-zinc-100'
                 }`}
@@ -121,9 +141,10 @@ export const App: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setActiveTab('vault')}
+                aria-current={route.page === 'vault' ? 'page' : undefined}
+                onClick={() => navigateToVault()}
                 className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  activeTab === 'vault'
+                  route.page === 'vault'
                     ? 'bg-white text-zinc-950 shadow-sm'
                     : 'text-zinc-400 hover:text-zinc-100'
                 }`}
@@ -132,7 +153,7 @@ export const App: React.FC = () => {
                 {videoCount > 0 && (
                   <span
                     className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums ${
-                      activeTab === 'vault'
+                      route.page === 'vault'
                         ? 'bg-zinc-950/15 text-zinc-950 font-semibold'
                         : 'bg-zinc-800 text-zinc-300'
                     }`}
@@ -142,12 +163,15 @@ export const App: React.FC = () => {
                 )}
               </button>
 
-              {selectedReport && (
+              {activeAnalysisId && (
                 <button
                   type="button"
-                  onClick={() => setActiveTab('analysis')}
+                  aria-current={route.page === 'analysis' ? 'page' : undefined}
+                  onClick={() =>
+                    navigateToReport(activeAnalysisId, activeVideoId || undefined)
+                  }
                   className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    activeTab === 'analysis'
+                    route.page === 'analysis'
                       ? 'bg-white text-zinc-950 shadow-sm'
                       : 'text-zinc-400 hover:text-zinc-100'
                   }`}
@@ -196,15 +220,15 @@ export const App: React.FC = () => {
 
         {/* 主內容區：留白充足 */}
         <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8 sm:py-10">
-          {activeTab === 'record' && (
+          {route.page === 'record' && (
             <RecordWorkspace
-              onNavigateToVault={() => setActiveTab('vault')}
+              onNavigateToVault={() => navigateToVault()}
               onOpenAnalysis={handleOpenAnalysis}
-              initialFocusAction={focusAction}
+              initialFocusAction={route.focusAction}
             />
           )}
 
-          {activeTab === 'vault' && (
+          {route.page === 'vault' && (
             <VideoVault
               networkStatus={networkStatus}
               canAnalyze={canSubmitAnalysis}
@@ -212,13 +236,21 @@ export const App: React.FC = () => {
             />
           )}
 
-          {activeTab === 'analysis' && selectedReport && (
-            <AnalysisDashboard
-              videoId={selectedReport.videoId}
-              analysisId={selectedReport.analysisId}
-              onBack={() => setActiveTab('vault')}
-              onReverifyAction={handleReverifyAction}
-            />
+          {route.page === 'analysis' && activeAnalysisId && (
+            <Suspense
+              fallback={
+                <div className="lab-card p-16 text-center text-xs text-zinc-500">
+                  載入分析報告模組中...
+                </div>
+              }
+            >
+              <LazyAnalysisDashboard
+                videoId={activeVideoId}
+                analysisId={activeAnalysisId}
+                onBack={() => navigateToVault()}
+                onReverifyAction={handleReverifyAction}
+              />
+            </Suspense>
           )}
         </main>
 
@@ -232,3 +264,4 @@ export const App: React.FC = () => {
     </ToastProvider>
   );
 };
+

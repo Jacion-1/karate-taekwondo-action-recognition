@@ -225,13 +225,26 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.tagName === 'SELECT')
-      ) {
-        return;
+      if (target) {
+        const tag = target.tagName;
+        if (
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          tag === 'SELECT' ||
+          target.isContentEditable ||
+          target.closest('[contenteditable]')
+        ) {
+          return;
+        }
+        if (
+          e.code === 'Space' &&
+          (tag === 'BUTTON' ||
+            target.closest('button') ||
+            target.getAttribute('role') === 'slider' ||
+            target.closest('[role="slider"]'))
+        ) {
+          return;
+        }
       }
       if (e.code === 'Space') {
         e.preventDefault();
@@ -555,6 +568,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
               {analysis.frames && analysis.frames.length > 0 && (
                 <button
                   type="button"
+                  aria-label={showKinoveaOverlay ? '關閉角度標記疊加層' : '開啟角度標記疊加層'}
                   onClick={() => setShowKinoveaOverlay((prev) => !prev)}
                   className={`absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium backdrop-blur-md transition ${
                     showKinoveaOverlay
@@ -647,6 +661,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
+                  aria-label={isPlaying ? '暫停影片' : '播放影片'}
                   onClick={handleTogglePlay}
                   className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition"
                 >
@@ -665,6 +680,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
                 <button
                   type="button"
+                  aria-label="上一幀"
                   onClick={() => handleStepFrame(-1)}
                   className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-300 transition"
                   title={`上一幀 (-${frameStepSeconds.toFixed(3)}s @ ${effectiveFps}fps, ←)`}
@@ -673,6 +689,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 </button>
                 <button
                   type="button"
+                  aria-label="下一幀"
                   onClick={() => handleStepFrame(1)}
                   className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-300 transition"
                   title={`下一幀 (+${frameStepSeconds.toFixed(3)}s @ ${effectiveFps}fps, →)`}
@@ -681,6 +698,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 </button>
                 <button
                   type="button"
+                  aria-label="重頭開始播放"
                   onClick={() => handleSeekToTime(0)}
                   className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition"
                   title="重頭開始"
