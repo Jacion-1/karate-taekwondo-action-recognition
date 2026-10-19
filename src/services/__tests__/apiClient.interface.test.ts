@@ -6,8 +6,10 @@ import {
 } from '../apiClient.interface';
 import {
   ACTION_METADATA,
+  FOCUS_FEATURE_METADATA,
   type ActionAnalysisResponse,
   type ActionType,
+  type FocusFeatureCode,
 } from '../../types/martial-arts.types';
 import exampleResponseJson from '../../../docs/api/analysis-response.example.json';
 
@@ -132,7 +134,10 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
     expect(validated.metrics).toBeUndefined();
   });
 
-  it('supports all 15 Karate (12) and Taekwondo (12) techniques in ACTION_METADATA with honest provenance', () => {
+  it('supports all 15 Karate (12) and Taekwondo (12) techniques and all 21 CSV focus_features in ACTION_METADATA', () => {
+    const featureKeys = Object.keys(FOCUS_FEATURE_METADATA) as FocusFeatureCode[];
+    expect(featureKeys.length).toBe(21);
+
     const actionKeys = Object.keys(ACTION_METADATA) as ActionType[];
     expect(actionKeys.length).toBe(15);
     for (const act of actionKeys) {
@@ -140,6 +145,8 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
       expect(meta.label.length).toBeGreaterThan(0);
       expect(meta.terminology.length).toBeGreaterThan(0);
       expect(meta.primaryJoints.length).toBeGreaterThan(0);
+      expect(meta.focusFeatures.length).toBeGreaterThanOrEqual(2);
+      expect(meta.focusFeatures.length).toBeLessThanOrEqual(4);
       expect(meta.cameraViewHint.length).toBeGreaterThan(0);
       expect(meta.provenance.status).toBe('heuristic-unverified');
       expect(meta.provenance.citation).toBeUndefined();
@@ -150,12 +157,21 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
         actionType: act,
         totalScore: 86,
         defects: [],
+        keyframes: {
+          preparation: 0.5,
+          impact: 1.4,
+          recovery: 2.2,
+          start_time_s: 0.4,
+          completion_time_s: 1.4,
+          end_time_s: 2.5,
+        },
         angleTimeSeries: {
-          jointName: meta.primaryJoints[0],
+          jointName: meta.focusFeatures[0],
           points: [{ time: 0.5, actualAngle: 165, standardMin: 160, standardMax: 175 }],
         },
       });
       expect(validated.actionType).toBe(act);
+      expect(validated.keyframes?.completion_time_s).toBe(1.4);
     }
   });
 

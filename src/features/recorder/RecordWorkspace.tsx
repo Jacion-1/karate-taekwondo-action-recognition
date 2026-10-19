@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import {
   ACTION_METADATA,
-  JOINT_LABELS,
+  FOCUS_FEATURE_METADATA,
   type ActionType,
   type LocalVideoRecord,
 } from '../../types/martial-arts.types';
@@ -666,15 +666,27 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                       <div className="mt-2 pl-3.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-zinc-500">
                         <span>{meta.targetAngleHint}</span>
                         <span>
-                          關鍵：{meta.primaryJoints.map((j) => JOINT_LABELS[j]).join(' · ')}
-                        </span>
-                      </div>
-                      <div className="mt-1.5 pl-3.5 flex items-center justify-between gap-2 text-[10px] text-zinc-500">
-                        <span>
                           {meta.provenance.status === 'cited' && meta.provenance.citation
                             ? `閾值來源：${meta.provenance.citation}`
                             : '初始經驗閾值，待驗證'}
                         </span>
+                      </div>
+                      <div className="mt-2 pl-3.5 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] text-zinc-500">
+                          關鍵特徵 (focus_feature_1~4)：
+                        </span>
+                        {meta.focusFeatures.map((featCode, idx) => {
+                          const fMeta = FOCUS_FEATURE_METADATA[featCode];
+                          return (
+                            <span
+                              key={featCode}
+                              title={`focus_feature_${idx + 1}: ${featCode}｜${fMeta.formula}（${fMeta.scenario}）`}
+                              className="px-2 py-0.5 rounded-md bg-zinc-950/80 border border-white/[0.06] text-[10px] font-mono text-zinc-300"
+                            >
+                              F{idx + 1} {fMeta.label} ({featCode})
+                            </span>
+                          );
+                        })}
                       </div>
                     </button>
                   );
@@ -683,21 +695,28 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
           </div>
         </div>
 
-        {/* 次要位置：預設收合的系統架構說明 */}
+        {/* 次要位置：預設收合的系統架構與 CSV 特徵座標說明 */}
         <details className="group rounded-2xl bg-zinc-900/30 border border-white/[0.05] px-4 py-3 text-xs text-zinc-500">
           <summary className="cursor-pointer list-none flex items-center justify-between font-medium text-zinc-400 hover:text-zinc-300 transition">
             <span className="inline-flex items-center gap-2">
               <Info className="w-3.5 h-3.5 text-zinc-500" />
-              系統架構與效能防護資訊
+              21 項特徵規格、座標定義與效能防護說明
             </span>
             <span className="text-[11px] group-open:rotate-180 transition-transform">
               ▾
             </span>
           </summary>
           <ul className="mt-3 pt-3 border-t border-white/[0.05] space-y-2 text-[11px] text-zinc-400 leading-relaxed">
-            <li>• 計時狀態封裝於獨立葉子組件，錄影期間視訊畫面零重繪。</li>
-            <li>• 卸載時自動執行視訊軌道與 ObjectURL 記憶體釋放。</li>
-            <li>• 影片二進位資料直接寫入本機 IndexedDB，支援離線暫存。</li>
+            <li>
+              • <strong>左右座標定義</strong>：所有特徵之左（<code>left_*</code>）／右（<code>right_*</code>）皆為<strong>「選手自己」的左與右</strong>，非螢幕畫面左右。
+            </li>
+            <li>
+              • <strong>21 項關鍵特徵 (<code>focus_feature_1~4</code>)</strong>：涵蓋 8 項關節夾角（<code>*_deg</code>，單位：度）與 13 項相對髖中心／軀幹尺度位置與步幅（<code>*_rel</code>，其中 <code>x_rel</code> 為水平相對位置、<code>y_rel</code> 為垂直相對位置且向下增加）。
+            </li>
+            <li>
+              • <strong>動作時間點對齊</strong>：分析報告支援定位至 <code>start_time_s</code>（動作開始）、<code>completion_time_s</code>（動作到位，介於開始與結束之間）與 <code>end_time_s</code>（動作結束）。
+            </li>
+            <li>• 計時狀態封裝於獨立葉子組件，錄影期間視訊畫面零重繪；影片二進位資料直接寫入本機 IndexedDB。</li>
           </ul>
         </details>
       </div>

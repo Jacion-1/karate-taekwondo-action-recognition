@@ -18,13 +18,60 @@ export const ActionTypeSchema = z.enum([
   'fighting_stance',
 ]);
 
+export const FocusFeatureCodeSchema = z.enum([
+  'left_elbow_deg',
+  'right_elbow_deg',
+  'left_shoulder_deg',
+  'right_shoulder_deg',
+  'left_hip_deg',
+  'right_hip_deg',
+  'left_knee_deg',
+  'right_knee_deg',
+  'left_wrist_x_rel',
+  'left_wrist_y_rel',
+  'right_wrist_x_rel',
+  'right_wrist_y_rel',
+  'left_knee_x_rel',
+  'left_knee_y_rel',
+  'right_knee_x_rel',
+  'right_knee_y_rel',
+  'left_ankle_x_rel',
+  'left_ankle_y_rel',
+  'right_ankle_x_rel',
+  'right_ankle_y_rel',
+  'stance_width_rel',
+]);
+
 export const JointNameSchema = z.enum([
+  // 向下相容舊版 6 個關節代碼
   'left_elbow',
   'right_elbow',
   'left_knee',
   'right_knee',
   'hip',
   'torso',
+  // CSV 標準 21 個關鍵特徵代碼 (8 個角度 *_deg + 13 個相對位置/步幅 *_rel)
+  'left_elbow_deg',
+  'right_elbow_deg',
+  'left_shoulder_deg',
+  'right_shoulder_deg',
+  'left_hip_deg',
+  'right_hip_deg',
+  'left_knee_deg',
+  'right_knee_deg',
+  'left_wrist_x_rel',
+  'left_wrist_y_rel',
+  'right_wrist_x_rel',
+  'right_wrist_y_rel',
+  'left_knee_x_rel',
+  'left_knee_y_rel',
+  'right_knee_x_rel',
+  'right_knee_y_rel',
+  'left_ankle_x_rel',
+  'left_ankle_y_rel',
+  'right_ankle_x_rel',
+  'right_ankle_y_rel',
+  'stance_width_rel',
 ]);
 
 export const SeverityLevelSchema = z.enum(['minor', 'moderate', 'critical']);
@@ -66,6 +113,9 @@ export const ActionKeyframesSchema = z.object({
   preparation: z.number().nonnegative(),
   impact: z.number().nonnegative(),
   recovery: z.number().nonnegative(),
+  start_time_s: z.number().nonnegative().optional(),
+  completion_time_s: z.number().nonnegative().optional(),
+  end_time_s: z.number().nonnegative().optional(),
 });
 
 export const KeypointItemSchema = z.object({
@@ -113,6 +163,7 @@ export const AnalysisJobAcceptedSchema = z.object({
 });
 
 export type ActionType = z.infer<typeof ActionTypeSchema>;
+export type FocusFeatureCode = z.infer<typeof FocusFeatureCodeSchema>;
 export type JointName = z.infer<typeof JointNameSchema>;
 export type SeverityLevel = z.infer<typeof SeverityLevelSchema>;
 export type GradeLevel = z.infer<typeof GradeLevelSchema>;

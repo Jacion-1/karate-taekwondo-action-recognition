@@ -15,6 +15,7 @@ import { videoRepository } from '../../db/repositories/video.repo';
 import {
   ACTION_METADATA,
   JOINT_LABELS,
+  isRelativeFeature,
   type ActionAnalysisResponse,
   type ActionType,
   type JointName,
@@ -315,14 +316,17 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
     const isCompliant =
       closest.actualAngle >= closest.standardMin &&
       closest.actualAngle <= closest.standardMax;
-    const delta = isCompliant
+    const rawDelta = isCompliant
       ? 0
       : closest.actualAngle < closest.standardMin
         ? closest.actualAngle - closest.standardMin
         : closest.actualAngle - closest.standardMax;
+    const isRel = isRelativeFeature(activeSeries.jointName);
+    const delta = isRel ? Number(rawDelta.toFixed(2)) : Math.round(rawDelta);
     return {
       jointName: activeSeries.jointName,
-      jointLabel: JOINT_LABELS[activeSeries.jointName],
+      jointLabel: JOINT_LABELS[activeSeries.jointName] || activeSeries.jointName,
+      unitSuffix: isRel ? ' rel' : '°',
       ...closest,
       isCompliant,
       delta,
@@ -596,7 +600,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   />
                 )}
 
-              {/* 左下角：Kinovea 即時關節角度與偏差狀態 HUD */}
+              {/* 左下角：Kinovea 即時關鍵特徵與偏差狀態 HUD */}
               {currentPointHud && (
                 <div className="pointer-events-none absolute bottom-3 left-3 z-10 px-3 py-1.5 rounded-xl bg-zinc-950/85 border border-white/[0.08] backdrop-blur-md font-mono text-xs flex items-center gap-2">
                   <span className="text-zinc-300">
@@ -609,12 +613,14 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                         : 'text-rose-400'
                     }`}
                   >
-                    {currentPointHud.actualAngle}°
+                    {currentPointHud.actualAngle}
+                    {currentPointHud.unitSuffix}
                   </span>
                   <span className="text-[11px] text-zinc-500 tabular-nums">
-                    標準 {currentPointHud.standardMin}°–{currentPointHud.standardMax}°
+                    標準 {currentPointHud.standardMin}–{currentPointHud.standardMax}
+                    {currentPointHud.unitSuffix}
                     {!currentPointHud.isCompliant &&
-                      ` (${currentPointHud.delta > 0 ? `+${currentPointHud.delta}` : currentPointHud.delta}°)`}
+                      ` (${currentPointHud.delta > 0 ? `+${currentPointHud.delta}` : currentPointHud.delta}${currentPointHud.unitSuffix})`}
                   </span>
                 </div>
               )}
@@ -626,15 +632,26 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
               </div>
             </div>
 
-            {/* Kinovea 動作三階段關鍵幀快速定位列 (Keyframes) — 僅在後端提供 keyframes 時顯示 */}
+            {/* CSV 分段與關鍵時間點快速定位列 (start_time_s / completion_time_s / end_time_s) */}
             {keyframes && (
-              <div className="px-4 py-2.5 bg-zinc-950/50 border-t border-white/[0.05] flex items-center justify-between gap-2 text-xs">
-                <span className="text-[11px] text-zinc-500">動作階段定位</span>
-                <div className="flex items-center gap-1.5">
+              <div className="px-4 py-2.5 bg-zinc-950/50 border-t border-white/[0.05] flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-[11px] text-zinc-500">
+                  動作時間定位 (start / completion / end)
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
                   {[
-                    { label: '蓄力期', time: keyframes.preparation },
-                    { label: '擊打頂點', time: keyframes.impact },
-                    { label: '收勢回防', time: keyframes.recovery },
+                    {
+                      label: '動作開始 (start_time_s)',
+                      time: keyframes.start_time_s ?? keyframes.preparation,
+                    },
+                    {
+                      label: '動作到位 (completion_time_s)',
+                      time: keyframes.completion_time_s ?? keyframes.impact,
+                    },
+                    {
+                      label: '動作結束 (end_time_s)',
+                      time: keyframes.end_time_s ?? keyframes.recovery,
+                    },
                   ].map((kf) => {
                     const isActive = Math.abs(currentTime - kf.time) < 0.2;
                     return (
@@ -648,7 +665,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                             : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-white/[0.05]'
                         }`}
                       >
-                        {kf.label} {kf.time.toFixed(1)}s
+                        {kf.label} {kf.time.toFixed(2)}s
                       </button>
                     );
                   })}
@@ -779,6 +796,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             currentTime={currentTime}
             defects={analysis.defects}
             onSeekToTime={handleSeekToTime}
+            focusFeatures={actionMeta.focusFeatures}
           />
 
           <DefectTimelineList

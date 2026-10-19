@@ -11,9 +11,12 @@ import {
   ReferenceDot,
 } from 'recharts';
 import {
+  FOCUS_FEATURE_METADATA,
   JOINT_LABELS,
+  isRelativeFeature,
   type AngleTimeSeriesPoint,
   type DefectItem,
+  type FocusFeatureCode,
   type JointAngleSeries,
   type JointName,
 } from '../../../../types/martial-arts.types';
@@ -25,6 +28,7 @@ interface JointAngleChartProps {
   currentTime: number;
   defects: DefectItem[];
   onSeekToTime: (seconds: number) => void;
+  focusFeatures?: FocusFeatureCode[];
 }
 
 const TOOLTIP_CONTENT_STYLE: React.CSSProperties = {
@@ -36,20 +40,21 @@ const TOOLTIP_CONTENT_STYLE: React.CSSProperties = {
 };
 
 const CHART_MARGIN = { top: 8, right: 12, left: 0, bottom: 0 };
-const Y_AXIS_WIDTH = 44;
+const Y_AXIS_WIDTH = 48;
 
 interface StaticRechartsLayerProps {
   chartData: AngleTimeSeriesPoint[];
   jointDefects: DefectItem[];
+  isRelative: boolean;
   onSeekToTime: (seconds: number) => void;
 }
 
 /**
- * 靜態圖表資料層：僅在切換關節、時序資料或瑕疵清單變動時重繪，
+ * 靜態圖表資料層：僅在切換特徵、時序資料或瑕疵清單變動時重繪，
  * 播放期間 currentTime 以 60fps 更新時此組件完全不重繪。
  */
 const StaticRechartsLayer: React.FC<StaticRechartsLayerProps> = React.memo(
-  ({ chartData, jointDefects, onSeekToTime }) => {
+  ({ chartData, jointDefects, isRelative, onSeekToTime }) => {
     const handleChartClick = useCallback(
       (state: { activeLabel?: string | number } | null | undefined) => {
         if (state && state.activeLabel !== undefined) {
@@ -86,12 +91,12 @@ const StaticRechartsLayer: React.FC<StaticRechartsLayerProps> = React.memo(
           />
           <YAxis
             width={Y_AXIS_WIDTH}
-            domain={[40, 190]}
+            domain={isRelative ? ['auto', 'auto'] : [30, 190]}
             stroke="#52525b"
             tick={{ fill: '#71717a', fontSize: 11 }}
             tickLine={false}
             axisLine={false}
-            unit="°"
+            unit={isRelative ? '' : '°'}
           />
           <Tooltip
             contentStyle={TOOLTIP_CONTENT_STYLE}
@@ -102,7 +107,7 @@ const StaticRechartsLayer: React.FC<StaticRechartsLayerProps> = React.memo(
           <Area
             type="monotone"
             dataKey="standardBand"
-            name="標準範圍"
+            name={isRelative ? '標準相對範圍 (rel)' : '標準角度範圍 (°)'}
             fill="#10b981"
             fillOpacity={0.14}
             stroke="#10b981"
@@ -111,11 +116,11 @@ const StaticRechartsLayer: React.FC<StaticRechartsLayerProps> = React.memo(
             isAnimationActive={false}
           />
 
-          {/* 學員實測角度曲線（使用高對比純白線條，極簡俐落） */}
+          {/* 學員實測特徵曲線（使用高對比純白線條，極簡俐落） */}
           <Line
             type="monotone"
             dataKey="actualAngle"
-            name="實測角度"
+            name={isRelative ? '實測相對位置 (rel)' : '實測角度 (°)'}
             stroke="#ffffff"
             strokeWidth={2}
             dot={false}
@@ -180,7 +185,7 @@ const PlayheadCursor: React.FC<PlayheadCursorProps> = React.memo(
 PlayheadCursor.displayName = 'PlayheadCursor';
 
 /**
- * 時序關節角度圖表 (Modern Minimalism)
+ * 時序關鍵特徵圖表 (支援 *_deg 夾角與 *_rel 相對位置雙單位切換)
  */
 export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
   ({
@@ -190,12 +195,20 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
     currentTime,
     defects,
     onSeekToTime,
+    focusFeatures,
   }) => {
     const activeSeries = useMemo(() => {
       return (
         seriesList.find((s) => s.jointName === selectedJoint) ?? seriesList[0]
       );
     }, [seriesList, selectedJoint]);
+
+    const activeFeatureName = activeSeries?.jointName ?? selectedJoint;
+    const isRelative = isRelativeFeature(activeFeatureName);
+    const csvMeta =
+      activeFeatureName in FOCUS_FEATURE_METADATA
+        ? FOCUS_FEATURE_METADATA[activeFeatureName as FocusFeatureCode]
+        : undefined;
 
     const chartData = useMemo(() => {
       if (!activeSeries) return [];
@@ -220,32 +233,51 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
 
     return (
       <div className="lab-card p-6 space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-white">
-              關節角度時序曲線
-            </h3>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              點擊圖表任意時間點可同步定位左側慢動作影片
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-white">
+                關鍵特徵時序曲線 (focus_feature_1~4)
+              </h3>
+              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] font-mono text-[10px] text-zinc-400">
+                {activeFeatureName}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-400 mt-1">
+              {csvMeta
+                ? `計算方式：${csvMeta.formula} · 推薦情境：${csvMeta.scenario}（左右為選手自身之左右）`
+                : '點擊圖表任意時間點可同步定位左側慢動作影片'}
             </p>
           </div>
 
-          {/* 乾淨的關節切換膠囊 */}
-          <div className="flex flex-wrap items-center gap-1 bg-zinc-950/80 p-1 rounded-full border border-white/[0.06]">
+          {/* 關鍵特徵切換膠囊 (對應 CSV focus_feature_1 ~ 4) */}
+          <div className="flex flex-wrap items-center gap-1 bg-zinc-950/80 p-1 rounded-2xl border border-white/[0.06]">
             {seriesList.map((s) => {
               const active = s.jointName === activeSeries?.jointName;
+              const focusIdx = focusFeatures
+                ? focusFeatures.indexOf(s.jointName as FocusFeatureCode)
+                : -1;
               return (
                 <button
                   key={s.jointName}
                   type="button"
                   onClick={() => onSelectJoint(s.jointName)}
-                  className={`px-3.5 py-1 rounded-full text-xs font-medium transition ${
+                  className={`px-3 py-1 rounded-xl text-xs font-medium transition flex items-center gap-1.5 ${
                     active
                       ? 'bg-white text-zinc-950'
                       : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  {JOINT_LABELS[s.jointName] || s.jointName}
+                  {focusIdx >= 0 && (
+                    <span
+                      className={`text-[10px] font-mono ${
+                        active ? 'text-zinc-700 font-semibold' : 'text-zinc-500'
+                      }`}
+                    >
+                      F{focusIdx + 1}
+                    </span>
+                  )}
+                  <span>{JOINT_LABELS[s.jointName] || s.jointName}</span>
                 </button>
               );
             })}
@@ -253,18 +285,25 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
         </div>
 
         {/* 極簡圖例 */}
-        <div className="flex flex-wrap items-center gap-6 text-xs text-zinc-400">
-          <span className="inline-flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/25 border border-emerald-400/60 inline-block" />
-            標準範圍
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <span className="w-3.5 h-0.5 bg-white inline-block" />
-            實測角度
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
-            偏差標記
+        <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-zinc-400">
+          <div className="flex flex-wrap items-center gap-6">
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/25 border border-emerald-400/60 inline-block" />
+              {isRelative ? '標準相對範圍 (rel)' : '標準角度範圍 (°)'}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="w-3.5 h-0.5 bg-white inline-block" />
+              {isRelative ? '實測相對位置／軀幹比 (rel)' : '實測關節夾角 (°)'}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
+              偏差標記
+            </span>
+          </div>
+          <span className="text-[11px] font-mono text-zinc-500">
+            {isRelative
+              ? '單位：相對髖中心／軀幹尺度比值 (y_rel 向下增加)'
+              : '單位：關節夾角度數 (°)'}
           </span>
         </div>
 
@@ -272,6 +311,7 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
           <StaticRechartsLayer
             chartData={chartData}
             jointDefects={jointDefects}
+            isRelative={isRelative}
             onSeekToTime={onSeekToTime}
           />
           <PlayheadCursor

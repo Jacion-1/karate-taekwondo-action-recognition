@@ -1,12 +1,14 @@
-import type {
-  ActionAnalysisResponse,
-  ActionType,
-  AngleTimeSeriesPoint,
-  DefectItem,
-  FrameKeypoints,
-  JointAngleSeries,
-  JointName,
-  LocalVideoRecord,
+import {
+  ACTION_METADATA,
+  isRelativeFeature,
+  type ActionAnalysisResponse,
+  type ActionType,
+  type AngleTimeSeriesPoint,
+  type DefectItem,
+  type FrameKeypoints,
+  type JointAngleSeries,
+  type JointName,
+  type LocalVideoRecord,
 } from '../types/martial-arts.types';
 import { videoRepository } from '../db/repositories/video.repo';
 import {
@@ -17,7 +19,7 @@ import {
 } from './apiClient.interface';
 
 /**
- * 根據武術動作類型與關節，生成物理上逼真的時序角度數據（每 0.1 秒一筆採樣）
+ * 根據武術動作類型與特徵代碼，生成物理上逼真的時序角度 (*_deg) 或相對位置 (*_rel) 數據（每 0.1 秒一筆採樣）
  */
 function generateRealisticSeries(
   jointName: JointName,
@@ -26,6 +28,64 @@ function generateRealisticSeries(
 ): JointAngleSeries {
   const sampleCount = Math.max(20, Math.floor(duration * 10));
   const points: AngleTimeSeriesPoint[] = [];
+
+  // 相對位置／步幅特徵 (*_rel)：以相對髖中心／軀幹尺度比值表示（保留兩位小數）
+  if (isRelativeFeature(jointName)) {
+    for (let i = 0; i <= sampleCount; i++) {
+      const time = Number((i * 0.1).toFixed(1));
+      const progress = i / sampleCount;
+      const wave = Math.sin(progress * Math.PI);
+
+      let standardMin: number;
+      let standardMax: number;
+      let actualAngle: number;
+
+      if (jointName === 'stance_width_rel') {
+        const base = actionType === 'zenkutsu_dachi' || actionType === 'lunge_punch' ? 1.15 : 0.85;
+        standardMin = Number((base - 0.1 + wave * 0.18).toFixed(2));
+        standardMax = Number((base + 0.12 + wave * 0.18).toFixed(2));
+        const dev = progress > 0.45 && progress < 0.62 ? -0.14 : Math.sin(i * 0.7) * 0.03;
+        actualAngle = Number((((standardMin + standardMax) / 2) + dev).toFixed(2));
+      } else if (jointName.endsWith('_wrist_y_rel')) {
+        // y_rel 向下增加：上段約 -0.85，中段約 -0.35，下段約 +0.25
+        const targetY =
+          actionType === 'age_uke'
+            ? -0.82
+            : actionType === 'gedan_barai'
+              ? 0.28
+              : -0.38;
+        standardMin = Number((-0.2 + wave * (targetY + 0.2) - 0.1).toFixed(2));
+        standardMax = Number((-0.2 + wave * (targetY + 0.2) + 0.1).toFixed(2));
+        const dev = progress > 0.44 && progress < 0.58 ? 0.13 : Math.cos(i * 0.8) * 0.03;
+        actualAngle = Number((((standardMin + standardMax) / 2) + dev).toFixed(2));
+      } else if (jointName.endsWith('_ankle_y_rel') || jointName.endsWith('_knee_y_rel')) {
+        // 抬腿／踢擊時 y_rel 向上（數值變小／負值方向）
+        const lift = actionType === 'axe_kick' ? -0.95 : -0.55;
+        standardMin = Number((0.75 + wave * lift - 0.12).toFixed(2));
+        standardMax = Number((0.75 + wave * lift + 0.12).toFixed(2));
+        const dev = progress > 0.45 && progress < 0.6 ? 0.15 : Math.sin(i * 0.75) * 0.03;
+        actualAngle = Number((((standardMin + standardMax) / 2) + dev).toFixed(2));
+      } else {
+        // *_x_rel 橫向位置（出拳、側踢或橫向防禦延伸）
+        standardMin = Number((0.18 + wave * 0.62).toFixed(2));
+        standardMax = Number((0.36 + wave * 0.62).toFixed(2));
+        const dev = progress > 0.45 && progress < 0.6 ? -0.12 : Math.cos(i * 0.7) * 0.03;
+        actualAngle = Number((((standardMin + standardMax) / 2) + dev).toFixed(2));
+      }
+
+      points.push({
+        time,
+        actualAngle,
+        standardMin,
+        standardMax,
+        standardBand: [standardMin, standardMax],
+      });
+    }
+    return { jointName, points };
+  }
+
+  // 關節角度特徵 (*_deg 與舊版關節代碼)
+  const normalizedJoint = jointName.replace(/_deg$/, '');
 
   for (let i = 0; i <= sampleCount; i++) {
     const time = Number((i * 0.1).toFixed(1));
@@ -37,20 +97,20 @@ function generateRealisticSeries(
 
     if (
       (actionType === 'straight_punch' || actionType === 'lunge_punch') &&
-      jointName === 'right_elbow'
+      normalizedJoint === 'right_elbow'
     ) {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(70 + wave * 95);
       standardMax = Math.round(85 + wave * 95);
       const deviation = progress > 0.42 && progress < 0.58 ? -14 : Math.sin(i * 0.9) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'uraken_uchi' && jointName === 'right_elbow') {
+    } else if (actionType === 'uraken_uchi' && normalizedJoint === 'right_elbow') {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(65 + wave * 90);
       standardMax = Math.round(82 + wave * 90);
       const deviation = progress > 0.43 && progress < 0.59 ? -13 : Math.sin(i * 0.85) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'shuto_uchi' && jointName === 'right_elbow') {
+    } else if (actionType === 'shuto_uchi' && normalizedJoint === 'right_elbow') {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(68 + wave * 82);
       standardMax = Math.round(84 + wave * 84);
@@ -58,38 +118,38 @@ function generateRealisticSeries(
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
     } else if (
       (actionType === 'lunge_punch' || actionType === 'zenkutsu_dachi') &&
-      jointName === 'left_knee'
+      normalizedJoint === 'left_knee'
     ) {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(150 - wave * 45);
       standardMax = Math.round(166 - wave * 41);
       const deviation = progress > 0.45 && progress < 0.65 ? 14 : Math.cos(i * 0.8) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'fighting_stance' && jointName === 'right_knee') {
+    } else if (actionType === 'fighting_stance' && (normalizedJoint === 'right_knee' || normalizedJoint === 'left_knee')) {
       const wave = Math.sin(progress * Math.PI * 2) * 0.5 + 0.5;
       standardMin = Math.round(135 + wave * 6);
       standardMax = Math.round(152 + wave * 6);
       const deviation = progress > 0.42 && progress < 0.6 ? 13 : Math.sin(i * 0.7) * 2;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'age_uke' && jointName === 'right_elbow') {
+    } else if (actionType === 'age_uke' && normalizedJoint === 'right_elbow') {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(52 + wave * 40);
       standardMax = Math.round(68 + wave * 44);
       const deviation = progress > 0.44 && progress < 0.58 ? 14 : Math.sin(i * 0.8) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'soto_uke' && jointName === 'right_elbow') {
+    } else if (actionType === 'soto_uke' && (normalizedJoint === 'right_elbow' || normalizedJoint === 'left_elbow')) {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(125 - wave * 40);
       standardMax = Math.round(142 - wave * 37);
       const deviation = progress > 0.44 && progress < 0.6 ? 15 : Math.cos(i * 0.75) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'gedan_barai' && jointName === 'left_elbow') {
+    } else if (actionType === 'gedan_barai' && normalizedJoint === 'left_elbow') {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(62 + wave * 88);
       standardMax = Math.round(76 + wave * 92);
       const deviation = progress > 0.45 && progress < 0.6 ? -13 : Math.cos(i * 0.8) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'hook_kick' && jointName === 'right_knee') {
+    } else if (actionType === 'hook_kick' && normalizedJoint === 'right_knee') {
       const extendPhase = Math.exp(-Math.pow((progress - 0.34) / 0.14, 2));
       const hookPhase = Math.exp(-Math.pow((progress - 0.54) / 0.12, 2));
       standardMin = Math.round(115 + extendPhase * 45 - hookPhase * 20);
@@ -101,7 +161,7 @@ function generateRealisticSeries(
         actionType === 'front_kick' ||
         actionType === 'back_kick' ||
         actionType === 'axe_kick') &&
-      jointName === 'right_knee'
+      normalizedJoint === 'right_knee'
     ) {
       const wave = Math.pow(Math.sin(progress * Math.PI), 1.4);
       const peakAdd = actionType === 'axe_kick' ? 105 : 100;
@@ -109,13 +169,19 @@ function generateRealisticSeries(
       standardMax = Math.round(78 + wave * peakAdd);
       const deviation = progress > 0.45 && progress < 0.62 ? -15 : Math.cos(i * 0.7) * 4;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (actionType === 'side_kick' && jointName === 'left_knee') {
+    } else if (actionType === 'side_kick' && normalizedJoint === 'left_knee') {
       const wave = Math.pow(Math.sin(progress * Math.PI), 1.3);
       standardMin = Math.round(62 + wave * 100);
       standardMax = Math.round(77 + wave * 100);
       const deviation = progress > 0.44 && progress < 0.6 ? -15 : Math.sin(i * 0.7) * 3;
       actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
-    } else if (jointName === 'hip') {
+    } else if (normalizedJoint === 'left_shoulder' || normalizedJoint === 'right_shoulder') {
+      const wave = Math.sin(progress * Math.PI);
+      standardMin = Math.round(45 + wave * 55);
+      standardMax = Math.round(62 + wave * 58);
+      const deviation = progress > 0.46 && progress < 0.62 ? 11 : Math.cos(i * 0.8) * 3;
+      actualAngle = Math.round((standardMin + standardMax) / 2 + deviation);
+    } else if (normalizedJoint === 'hip' || normalizedJoint === 'left_hip' || normalizedJoint === 'right_hip') {
       const wave = Math.sin(progress * Math.PI);
       standardMin = Math.round(90 + wave * 45);
       standardMax = Math.round(108 + wave * 45);
@@ -855,9 +921,44 @@ export const mockAnalysisService: IAnalysisApiClient & {
         break;
     }
 
-    const primarySeries = generateRealisticSeries(primaryJoint, effectiveDuration, actionType);
-    const hipSeries = generateRealisticSeries('hip', effectiveDuration, actionType);
-    const torsoSeries = generateRealisticSeries('torso', effectiveDuration, actionType);
+    const actionFocusFeatures = ACTION_METADATA[actionType].focusFeatures;
+    const mapLegacyJointToFocusFeature = (j: JointName): JointName => {
+      if (j === 'right_elbow') return 'right_elbow_deg';
+      if (j === 'left_elbow') return 'left_elbow_deg';
+      if (j === 'right_knee') return 'right_knee_deg';
+      if (j === 'left_knee') return 'left_knee_deg';
+      if (j === 'hip') {
+        return actionFocusFeatures.find((f) => f.includes('hip')) ?? 'right_hip_deg';
+      }
+      if (j === 'torso') {
+        return (
+          actionFocusFeatures.find((f) => f.includes('shoulder')) ?? 'right_shoulder_deg'
+        );
+      }
+      return j;
+    };
+
+    const resolvedPrimaryFeature = mapLegacyJointToFocusFeature(primaryJoint);
+    defects = defects.map((d) => ({
+      ...d,
+      jointName: mapLegacyJointToFocusFeature(d.jointName),
+    }));
+
+    const orderedFeatures: JointName[] = [];
+    for (const f of [
+      resolvedPrimaryFeature,
+      ...actionFocusFeatures,
+      ...defects.map((d) => d.jointName),
+    ]) {
+      if (!orderedFeatures.includes(f)) {
+        orderedFeatures.push(f);
+      }
+    }
+
+    const allJointSeries = orderedFeatures.map((feat) =>
+      generateRealisticSeries(feat, effectiveDuration, actionType)
+    );
+    const primarySeries = allJointSeries[0];
 
     const sampleCount = Math.max(20, Math.floor(effectiveDuration * 10));
     const frames: FrameKeypoints[] = [];
@@ -908,7 +1009,11 @@ export const mockAnalysisService: IAnalysisApiClient & {
         keypoints: [
           { name: 'head', x: clamp01(centerX), y: clamp01(95 / 360), visibility: 0.99 },
           { name: 'neck', x: clamp01(centerX), y: clamp01(neckY), visibility: 0.99 },
+          { name: 'right_shoulder', x: clamp01((290 + 14) / 640), y: clamp01(136 / 360), visibility: 0.98 },
+          { name: 'left_shoulder', x: clamp01((290 - 14) / 640), y: clamp01(136 / 360), visibility: 0.98 },
           { name: 'hip', x: clamp01(centerX), y: clamp01(hipY), visibility: 0.99 },
+          { name: 'right_hip', x: clamp01((290 + 10) / 640), y: clamp01(hipY), visibility: 0.98 },
+          { name: 'left_hip', x: clamp01((290 - 10) / 640), y: clamp01(hipY), visibility: 0.98 },
           { name: 'right_elbow', x: rightElbowX, y: rightElbowY, visibility: 0.96 },
           { name: 'right_wrist', x: rightWristX, y: rightWristY, visibility: 0.95 },
           { name: 'left_elbow', x: clamp01((290 - 26) / 640), y: clamp01(162 / 360), visibility: 0.92 },
@@ -921,11 +1026,15 @@ export const mockAnalysisService: IAnalysisApiClient & {
       });
     }
 
+    const startTimeS = Number((effectiveDuration * 0.12).toFixed(2));
+    const completionTimeS = peakTime;
+    const endTimeS = Number((effectiveDuration * 0.85).toFixed(2));
+
     const rawResponse = {
       analysisId: `ana-${videoId}`,
       videoId,
       source: 'mock' as const,
-      modelVersion: 'mock-biomechanics-v2.6',
+      modelVersion: 'mock-biomechanics-v2.7-csv-aligned',
       fps: 30,
       actionType,
       confidence,
@@ -938,11 +1047,14 @@ export const mockAnalysisService: IAnalysisApiClient & {
         preparation: prepTime,
         impact: peakTime,
         recovery: recoveryTime,
+        start_time_s: startTimeS,
+        completion_time_s: completionTimeS,
+        end_time_s: endTimeS,
       },
       frames,
       defects,
       angleTimeSeries: primarySeries,
-      allJointSeries: [primarySeries, hipSeries, torsoSeries],
+      allJointSeries,
     };
 
     try {

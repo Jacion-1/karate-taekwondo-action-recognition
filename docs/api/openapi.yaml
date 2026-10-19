@@ -123,6 +123,27 @@ components:
         - right_knee
         - hip
         - torso
+        - left_elbow_deg
+        - right_elbow_deg
+        - left_shoulder_deg
+        - right_shoulder_deg
+        - left_hip_deg
+        - right_hip_deg
+        - left_knee_deg
+        - right_knee_deg
+        - left_wrist_x_rel
+        - left_wrist_y_rel
+        - right_wrist_x_rel
+        - right_wrist_y_rel
+        - left_knee_x_rel
+        - left_knee_y_rel
+        - right_knee_x_rel
+        - right_knee_y_rel
+        - left_ankle_x_rel
+        - left_ankle_y_rel
+        - right_ankle_x_rel
+        - right_ankle_y_rel
+        - stance_width_rel
 
     SeverityLevel:
       type: string

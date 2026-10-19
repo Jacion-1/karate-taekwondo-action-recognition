@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import {
   JOINT_LABELS,
+  isRelativeFeature,
   type DefectItem,
   type JointName,
   type SeverityLevel,
@@ -54,7 +55,7 @@ export const DefectTimelineList: React.FC<DefectTimelineListProps> = ({
 
       {defects.length === 0 ? (
         <div className="p-5 rounded-xl bg-zinc-950/60 border border-white/[0.05] text-zinc-300 text-xs">
-          本次動作所有關節角度皆符合標準範圍。
+          本次動作所有關鍵特徵皆符合標準範圍。
         </div>
       ) : (
         <div className="divide-y divide-white/[0.06] border-t border-white/[0.06]">
@@ -62,12 +63,15 @@ export const DefectTimelineList: React.FC<DefectTimelineListProps> = ({
             const sev = SEVERITY_DOT[defect.severity];
             const isNearCurrentTime =
               Math.abs(currentTime - defect.timestamp) < 0.25;
-            const delta =
+            const isRel = isRelativeFeature(defect.jointName);
+            const unitSuffix = isRel ? ' rel' : '°';
+            const rawDelta =
               defect.currentValue < defect.standardRange[0]
                 ? defect.currentValue - defect.standardRange[0]
                 : defect.currentValue > defect.standardRange[1]
                   ? defect.currentValue - defect.standardRange[1]
                   : 0;
+            const delta = isRel ? Number(rawDelta.toFixed(2)) : Math.round(rawDelta);
 
             return (
               <button
@@ -88,7 +92,10 @@ export const DefectTimelineList: React.FC<DefectTimelineListProps> = ({
                       {defect.timestamp.toFixed(1)}s
                     </span>
                     <span className="text-sm font-semibold text-white">
-                      {JOINT_LABELS[defect.jointName]}
+                      {JOINT_LABELS[defect.jointName] || defect.jointName}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-zinc-900/80 border border-white/[0.05] font-mono text-[10px] text-zinc-400">
+                      {defect.jointName}
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400">
                       <span className={`w-1.5 h-1.5 rounded-full ${sev.dotClass}`} />
@@ -99,11 +106,11 @@ export const DefectTimelineList: React.FC<DefectTimelineListProps> = ({
                   <div className="flex items-center gap-3">
                     <div className="font-mono text-xs tabular-nums">
                       <span className="text-rose-400 font-semibold">
-                        實測 {defect.currentValue}°
+                        實測 {defect.currentValue}{unitSuffix}
                       </span>
                       <span className="text-zinc-500 ml-1.5">
-                        (標準 {defect.standardRange[0]}°–{defect.standardRange[1]}°
-                        {delta !== 0 ? ` · 差 ${delta > 0 ? `+${delta}` : delta}°` : ''})
+                        (標準 {defect.standardRange[0]}–{defect.standardRange[1]}{unitSuffix}
+                        {delta !== 0 ? ` · 差 ${delta > 0 ? `+${delta}` : delta}${unitSuffix}` : ''})
                       </span>
                     </div>
                     <span className="inline-flex items-center gap-0.5 text-[11px] text-zinc-400">

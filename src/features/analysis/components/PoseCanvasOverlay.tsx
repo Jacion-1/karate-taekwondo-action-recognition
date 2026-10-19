@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import type { FrameKeypoints, JointName } from '../../../types/martial-arts.types';
+import {
+  isRelativeFeature,
+  type FrameKeypoints,
+  type JointName,
+} from '../../../types/martial-arts.types';
 
 export interface ContainedRect {
   left: number;
@@ -110,34 +114,57 @@ function resolveJointTriplet(
 
   switch (joint) {
     case 'right_elbow':
+    case 'right_elbow_deg':
       return [
         getFirst('right_shoulder', 'neck'),
         getFirst('right_elbow'),
         getFirst('right_wrist'),
       ];
     case 'left_elbow':
+    case 'left_elbow_deg':
       return [
         getFirst('left_shoulder', 'neck'),
         getFirst('left_elbow'),
         getFirst('left_wrist'),
       ];
+    case 'right_shoulder_deg':
+      return [
+        getFirst('right_elbow'),
+        getFirst('right_shoulder', 'neck'),
+        getFirst('right_hip', 'hip'),
+      ];
+    case 'left_shoulder_deg':
+      return [
+        getFirst('left_elbow'),
+        getFirst('left_shoulder', 'neck'),
+        getFirst('left_hip', 'hip'),
+      ];
     case 'right_knee':
+    case 'right_knee_deg':
       return [
         getFirst('right_hip', 'hip'),
         getFirst('right_knee'),
         getFirst('right_ankle'),
       ];
     case 'left_knee':
+    case 'left_knee_deg':
       return [
         getFirst('left_hip', 'hip'),
         getFirst('left_knee'),
         getFirst('left_ankle'),
       ];
     case 'hip':
+    case 'right_hip_deg':
       return [
-        getFirst('neck', 'right_shoulder', 'left_shoulder'),
-        getFirst('hip', 'right_hip', 'left_hip'),
-        getFirst('right_knee', 'left_knee'),
+        getFirst('right_shoulder', 'neck'),
+        getFirst('right_hip', 'hip'),
+        getFirst('right_knee'),
+      ];
+    case 'left_hip_deg':
+      return [
+        getFirst('left_shoulder', 'neck'),
+        getFirst('left_hip', 'hip'),
+        getFirst('left_knee'),
       ];
     case 'torso':
       return [
@@ -145,6 +172,26 @@ function resolveJointTriplet(
         getFirst('neck', 'right_shoulder', 'left_shoulder'),
         getFirst('hip', 'right_hip', 'left_hip'),
       ];
+    case 'right_wrist_x_rel':
+    case 'right_wrist_y_rel':
+      return [undefined, getFirst('right_wrist'), undefined];
+    case 'left_wrist_x_rel':
+    case 'left_wrist_y_rel':
+      return [undefined, getFirst('left_wrist'), undefined];
+    case 'right_knee_x_rel':
+    case 'right_knee_y_rel':
+      return [undefined, getFirst('right_knee'), undefined];
+    case 'left_knee_x_rel':
+    case 'left_knee_y_rel':
+      return [undefined, getFirst('left_knee'), undefined];
+    case 'right_ankle_x_rel':
+    case 'right_ankle_y_rel':
+      return [undefined, getFirst('right_ankle'), undefined];
+    case 'left_ankle_x_rel':
+    case 'left_ankle_y_rel':
+      return [undefined, getFirst('left_ankle'), undefined];
+    case 'stance_width_rel':
+      return [undefined, getFirst('left_ankle', 'right_ankle', 'hip'), undefined];
   }
 }
 
@@ -334,7 +381,9 @@ export const PoseCanvasOverlay: React.FC<PoseCanvasOverlayProps> = ({
     ctx.fillStyle = accentColor;
     ctx.fill();
 
-    const labelText = `${actualAngle}°`;
+    const labelText = isRelativeFeature(selectedJoint)
+      ? `${Number(actualAngle.toFixed(2))} rel`
+      : `${actualAngle}°`;
     ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, monospace';
     const textWidth = ctx.measureText(labelText).width;
     const labelX = Math.min(rect.width - textWidth - 14, Math.max(6, vertexPt.x + 10));
