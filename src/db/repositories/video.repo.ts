@@ -5,10 +5,33 @@ import type {
   ActionAnalysisResponse,
 } from '../../types/martial-arts.types';
 
+export const INTERRUPTED_ANALYSIS_MESSAGE = '上次分析被中斷，請重新送出';
+
 /**
  * 影片與分析結果資料存取層 (Repository Pattern)
  */
 export const videoRepository = {
+  /**
+   * 應用程式啟動時呼叫一次：將上次因重新整理或關閉分頁而殘留的 uploading / processing 影片重設為 failed
+   */
+  async resetInterruptedAnalyses(): Promise<number> {
+    return db.transaction('rw', db.videos, async () => {
+      const stuckVideos = await db.videos
+        .where('status')
+        .anyOf(['uploading', 'processing'])
+        .toArray();
+
+      for (const vid of stuckVideos) {
+        await db.videos.update(vid.id, {
+          status: 'failed',
+          uploadProgress: 0,
+          errorMessage: INTERRUPTED_ANALYSIS_MESSAGE,
+        });
+      }
+      return stuckVideos.length;
+    });
+  },
+
   /**
    * 將錄製完成的二進位 Blob 直接寫入 IndexedDB
    */

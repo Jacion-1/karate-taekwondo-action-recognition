@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
+import { videoRepository } from '../db/repositories/video.repo';
 import { useNetworkStatus } from '../shared/hooks/useNetworkStatus';
 import { RecordWorkspace } from '../features/recorder/RecordWorkspace';
 import { VideoVault } from '../features/vault/VideoVault';
@@ -25,6 +26,14 @@ export const App: React.FC = () => {
   const [apiConfig, setApiConfig] = useState<ApiConnectionConfig>(() =>
     analysisClientFactory.getConfig()
   );
+  const [isClientHealthy, setIsClientHealthy] = useState<boolean>(true);
+
+  // 啟動時重設上次中斷殘留的 uploading / processing 紀錄
+  useEffect(() => {
+    videoRepository.resetInterruptedAnalyses().catch(() => {
+      // 忽略啟動清理異常
+    });
+  }, []);
 
   useEffect(() => {
     return analysisClientFactory.subscribe(setApiConfig);
@@ -32,6 +41,31 @@ export const App: React.FC = () => {
 
   const { networkStatus, simulateOffline, toggleSimulateOffline } =
     useNetworkStatus();
+
+  // 依目前 client 的 checkHealth() 結果決定能否送出（mock 模式永遠可用）
+  useEffect(() => {
+    let active = true;
+    if (apiConfig.mode === 'mock') {
+      setIsClientHealthy(true);
+      return;
+    }
+    if (simulateOffline) {
+      setIsClientHealthy(false);
+      return;
+    }
+    analysisClientFactory
+      .getClient()
+      .checkHealth()
+      .then((res) => {
+        if (active) setIsClientHealthy(res.ok);
+      })
+      .catch(() => {
+        if (active) setIsClientHealthy(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [apiConfig, simulateOffline]);
 
   const videoCount = useLiveQuery(() => db.videos.count(), []) ?? 0;
 
@@ -44,6 +78,9 @@ export const App: React.FC = () => {
     setFocusAction(actionType);
     setActiveTab('record');
   };
+
+  const canSubmitAnalysis =
+    apiConfig.mode === 'mock' ? true : isClientHealthy && !simulateOffline;
 
   return (
     <ToastProvider>
@@ -85,7 +122,7 @@ export const App: React.FC = () => {
                 <span>影片庫</span>
                 {videoCount > 0 && (
                   <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono tabular-nums ${
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums ${
                       activeTab === 'vault'
                         ? 'bg-zinc-950/15 text-zinc-950 font-semibold'
                         : 'bg-zinc-800 text-zinc-300'
@@ -116,20 +153,20 @@ export const App: React.FC = () => {
               <button
                 type="button"
                 onClick={toggleSimulateOffline}
-                title="點擊切換連線 / 模擬離線狀態"
+                title="開發工具：切換模擬離線狀態"
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 transition"
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${
-                    networkStatus === 'online' ? 'bg-emerald-400' : 'bg-amber-400'
+                    canSubmitAnalysis ? 'bg-emerald-400' : 'bg-amber-400'
                   }`}
                 />
                 <span className="hidden sm:inline">
-                  {networkStatus === 'online'
-                    ? '已連線'
-                    : simulateOffline
-                      ? '離線模式'
-                      : '未連線'}
+                  {simulateOffline
+                    ? '模擬離線'
+                    : canSubmitAnalysis
+                      ? '服務就緒'
+                      : '後端未就緒'}
                 </span>
               </button>
 
@@ -140,7 +177,7 @@ export const App: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 hover:text-white transition"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-400" />
-                <span className="hidden md:inline">
+                <span>
                   {apiConfig.mode === 'mock' ? '模擬引擎' : 'REST API'}
                 </span>
               </button>
@@ -161,6 +198,7 @@ export const App: React.FC = () => {
           {activeTab === 'vault' && (
             <VideoVault
               networkStatus={networkStatus}
+              canAnalyze={canSubmitAnalysis}
               onOpenAnalysis={handleOpenAnalysis}
             />
           )}

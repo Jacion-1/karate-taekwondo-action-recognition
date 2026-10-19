@@ -22,3 +22,12 @@
 - `MartialArtsDatabase` 新增 `version(2)` 並實作升級函式 `upgradeVideosV1ToV2`：舊紀錄若有 `analysisId` 則將 `actionType` 遷移至 `recognizedActionType`，若無則遷移至 `requestedActionType`。
 - `videoRepository.saveAnalysisResult` 僅寫入 `recognizedActionType`，絕不覆寫 `requestedActionType`；`HttpRestAnalysisClient` 僅傳送 `requestedActionType`。
 - 新增 `fake-indexeddb`（devDependency）與 `src/db/__tests__/video.repo.test.ts` 驗證 v1→v2 資料遷移與重新分析不污染鎖定狀態。
+
+---
+
+## Phase 3：錯誤處理、生命週期與狀態恢復
+- `videoRepository.resetInterruptedAnalyses()`：於應用程式啟動時將殘留為 `uploading` 或 `processing` 的影片重置為 `failed`（`errorMessage: "上次分析被中斷，請重新送出"`）。
+- `HttpRestAnalysisClient`：`xhr.upload.onprogress` 改為每跨過 10% 整數倍才寫入 IndexedDB；新增 `xhr.upload.onload` 在上傳串流結束、等待推論期間切換為 `processing`；所有背景 DB 寫入包裹 `try/catch`，避免 DB 寫入錯誤導致 XHR Promise 懸掛；請求完成後確實移除 `AbortSignal` 監聽器。
+- `AnalysisDashboard`：`getAnalysisById` 補上 `.catch` 並區分 `loading`、`not_found` 與 `error`（提供重試按鈕）三種狀態；`videoEl.play()` 處理 Promise rejection；移除 `togglePlay` 手動 `setIsPlaying`，統一由 `<video>` 原生事件驅動。
+- `VideoVault` 與 `App`：`handleQuickCreateAndAnalyze` 補上 `catch` 錯誤提示；`handleBatchUploadAllPending` 加入 `isBatchAnalyzing` 防重入鎖、進度顯示 `n/total` 與失敗彙整 Toast；移除以 `navigator.onLine` 誤擋區網後端與模擬引擎的邏輯，改以 `checkHealth()` 偵測（Mock 模式永遠為可用，HTTP 模式可點擊重新檢測）；頂部狀態膠囊在小螢幕保留顯示「模擬引擎／REST API」文字。
+

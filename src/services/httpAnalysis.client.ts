@@ -242,16 +242,22 @@ export class HttpRestAnalysisClient implements IAnalysisApiClient {
         options?.signal?.removeEventListener('abort', onAbortSignal);
       };
 
+      let lastSavedDecile = 0;
+
       xhr.upload.onprogress = async (event: ProgressEvent) => {
-        if (event.lengthComputable) {
+        if (event.lengthComputable && event.total > 0) {
           const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
           options?.onProgress?.(percent, 'uploading');
-          try {
-            await videoRepository.updateUploadStatus(video.id, 'uploading', {
-              uploadProgress: percent,
-            });
-          } catch {
-            // ignore DB error
+          const currentDecile = Math.floor(percent / 10) * 10;
+          if (currentDecile >= lastSavedDecile + 10) {
+            lastSavedDecile = currentDecile;
+            try {
+              await videoRepository.updateUploadStatus(video.id, 'uploading', {
+                uploadProgress: percent,
+              });
+            } catch {
+              // ignore DB error
+            }
           }
         }
       };

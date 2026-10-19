@@ -24,7 +24,8 @@ import { useObjectUrl } from '../../shared/hooks/useObjectUrl';
 import { useToast } from '../../shared/components/ToastContainer';
 
 interface VideoVaultProps {
-  networkStatus: NetworkStatus;
+  networkStatus?: NetworkStatus;
+  canAnalyze?: boolean;
   onOpenAnalysis: (videoId: string, analysisId: string) => void;
 }
 
@@ -62,13 +63,13 @@ const SOURCE_LABEL = {
 
 const VideoVaultItemCard: React.FC<{
   record: LocalVideoRecord;
-  networkStatus: NetworkStatus;
+  canAnalyze: boolean;
   onUploadAndAnalyze: (record: LocalVideoRecord) => void;
   onDelete: (id: string) => void;
   onOpenAnalysis: (videoId: string, analysisId: string) => void;
 }> = ({
   record,
-  networkStatus,
+  canAnalyze,
   onUploadAndAnalyze,
   onDelete,
   onOpenAnalysis,
@@ -241,7 +242,7 @@ const VideoVaultItemCard: React.FC<{
           ) : (
             <button
               type="button"
-              disabled={isBusy || networkStatus === 'offline'}
+              disabled={isBusy || !canAnalyze}
               onClick={() => onUploadAndAnalyze(record)}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-zinc-100 hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 font-medium text-xs transition"
             >
@@ -250,8 +251,8 @@ const VideoVaultItemCard: React.FC<{
                   <RotateCcw className="w-3 h-3" />
                   重試
                 </>
-              ) : networkStatus === 'offline' ? (
-                '離線暫存中'
+              ) : !canAnalyze ? (
+                '後端未連線'
               ) : (
                 '識別並評估'
               )}
@@ -274,12 +275,19 @@ const VideoVaultItemCard: React.FC<{
 };
 
 export const VideoVault: React.FC<VideoVaultProps> = ({
-  networkStatus,
+  canAnalyze = true,
   onOpenAnalysis,
 }) => {
   const { pushToast } = useToast();
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
-  const [actionFilter, setActionFilter] = useState<ActionType | 'UNIDENTIFIED' | 'ALL'>('ALL');
+  const [isBatchAnalyzing, setIsBatchAnalyzing] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
+  const [actionFilter, setActionFilter] = useState<
+    ActionType | 'UNIDENTIFIED' | 'ALL'
+  >('ALL');
   const [statusFilter, setStatusFilter] = useState<UploadStatus | 'ALL'>('ALL');
 
   const videos = useLiveQuery(
@@ -306,8 +314,18 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
   }, [videos, actionFilter, statusFilter]);
 
   const handleUploadAndAnalyze = async (record: LocalVideoRecord) => {
-    if (networkStatus === 'offline') return;
     const client = analysisClientFactory.getClient();
+    if (client.mode === 'http') {
+      const health = await client.checkHealth();
+      if (!health.ok) {
+        pushToast({
+          type: 'error',
+          title: '後端服務無法連線',
+          message: health.message,
+        });
+        return;
+      }
+    }
     try {
       const result = await client.uploadAndAnalyzeVideo(record);
       const recognizedLabel = ACTION_METADATA[result.actionType].label;
@@ -329,31 +347,79 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
   };
 
   const handleBatchUploadAllPending = async () => {
-    if (!videos || networkStatus === 'offline') return;
+    if (!videos || isBatchAnalyzing || !canAnalyze) return;
     const pending = videos.filter(
       (v) => v.status === 'local_saved' || v.status === 'failed'
     );
+    if (pending.length === 0) return;
+
     const client = analysisClientFactory.getClient();
-    for (const item of pending) {
-      try {
-        await client.uploadAndAnalyzeVideo(item);
-      } catch {
-        // Error saved to record
+    if (client.mode === 'http') {
+      const health = await client.checkHealth();
+      if (!health.ok) {
+        pushToast({
+          type: 'error',
+          title: '批次識別無法啟動',
+          message: health.message,
+        });
+        return;
       }
+    }
+
+    setIsBatchAnalyzing(true);
+    setBatchProgress({ current: 0, total: pending.length });
+    const errors: string[] = [];
+    let completedCount = 0;
+
+    try {
+      for (let i = 0; i < pending.length; i++) {
+        const item = pending[i];
+        setBatchProgress({ current: i + 1, total: pending.length });
+        try {
+          await client.uploadAndAnalyzeVideo(item);
+          completedCount++;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : '未知錯誤';
+          errors.push(`${item.fileName || item.id}: ${msg}`);
+        }
+      }
+
+      if (errors.length === 0) {
+        pushToast({
+          type: 'success',
+          title: `批次識別完成（共 ${completedCount}/${pending.length} 筆成功）`,
+        });
+      } else {
+        pushToast({
+          type: 'error',
+          title: `批次識別完成：成功 ${completedCount} 筆，失敗 ${errors.length} 筆`,
+          message: errors.slice(0, 2).join('；'),
+        });
+      }
+    } finally {
+      setIsBatchAnalyzing(false);
+      setBatchProgress(null);
     }
   };
 
   const handleQuickCreateAndAnalyze = async () => {
+    if (isCreatingDemo) return;
     setIsCreatingDemo(true);
     try {
       const id = await mockAnalysisService.createSyntheticDemoVideo();
       const saved = await videoRepository.getVideoById(id);
-      if (saved && networkStatus === 'online') {
+      if (saved && canAnalyze) {
         const analysis = await analysisClientFactory
           .getClient()
           .uploadAndAnalyzeVideo(saved);
         onOpenAnalysis(saved.id, analysis.analysisId);
       }
+    } catch (err) {
+      pushToast({
+        type: 'error',
+        title: '快速產生與分析失敗',
+        message: err instanceof Error ? err.message : '未知錯誤',
+      });
     } finally {
       setIsCreatingDemo(false);
     }
@@ -380,19 +446,28 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
           {pendingCount > 0 && (
             <button
               type="button"
-              disabled={networkStatus === 'offline'}
+              disabled={!canAnalyze || isBatchAnalyzing}
               onClick={handleBatchUploadAllPending}
-              className="px-4 py-2 rounded-full bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 font-medium text-xs transition"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 font-medium text-xs transition"
             >
-              批次識別與評估 ({pendingCount})
+              {isBatchAnalyzing && batchProgress ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>
+                    批次識別中 ({batchProgress.current}/{batchProgress.total})
+                  </span>
+                </>
+              ) : (
+                <span>批次識別與評估 ({pendingCount})</span>
+              )}
             </button>
           )}
 
           <button
             type="button"
-            disabled={isCreatingDemo}
+            disabled={isCreatingDemo || isBatchAnalyzing}
             onClick={handleQuickCreateAndAnalyze}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-zinc-200 font-medium text-xs transition"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-zinc-200 font-medium text-xs transition disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
             {isCreatingDemo ? '產生並識別動作中...' : '快速產生範例並查看報告'}
@@ -475,7 +550,7 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
             <VideoVaultItemCard
               key={record.id}
               record={record}
-              networkStatus={networkStatus}
+              canAnalyze={canAnalyze}
               onUploadAndAnalyze={handleUploadAndAnalyze}
               onDelete={async (id) => {
                 await videoRepository.deleteVideo(id);

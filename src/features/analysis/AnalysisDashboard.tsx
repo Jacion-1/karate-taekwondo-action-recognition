@@ -45,6 +45,11 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   const { pushToast } = useToast();
   const [videoRecord, setVideoRecord] = useState<LocalVideoRecord | null>(null);
   const [analysis, setAnalysis] = useState<ActionAnalysisResponse | null>(null);
+  const [loadState, setLoadState] = useState<
+    'loading' | 'ready' | 'not_found' | 'error'
+  >('loading');
+  const [loadErrorMessage, setLoadErrorMessage] = useState<string>('');
+  const [reloadTrigger, setReloadTrigger] = useState<number>(0);
   const [selectedJoint, setSelectedJoint] = useState<JointName>('right_elbow');
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -56,28 +61,46 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
   useEffect(() => {
     let mounted = true;
+    setLoadState('loading');
+    setLoadErrorMessage('');
+
     Promise.all([
-      videoRepository.getVideoById(videoId),
+      videoId ? videoRepository.getVideoById(videoId) : Promise.resolve(undefined),
       videoRepository.getAnalysisById(analysisId),
-    ]).then(([vid, ana]) => {
-      if (!mounted) return;
-      if (vid) setVideoRecord(vid);
-      if (ana) {
+    ])
+      .then(async ([vid, ana]) => {
+        if (!mounted) return;
+        const resolvedVid =
+          vid ?? (ana?.videoId ? await videoRepository.getVideoById(ana.videoId) : undefined);
+
+        if (!ana || !resolvedVid) {
+          setLoadState('not_found');
+          return;
+        }
+
+        setVideoRecord(resolvedVid);
         setAnalysis(ana);
         setSelectedJoint(ana.angleTimeSeries.jointName);
-      }
-    });
+        setLoadState('ready');
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setLoadErrorMessage(
+          err instanceof Error ? err.message : '讀取本地資料庫時發生未知錯誤'
+        );
+        setLoadState('error');
+      });
+
     return () => {
       mounted = false;
     };
-  }, [videoId, analysisId]);
+  }, [videoId, analysisId, reloadTrigger]);
 
   const handleSeekToTime = useCallback((seconds: number) => {
     const videoEl = videoRef.current;
     if (videoEl) {
       videoEl.pause();
       videoEl.currentTime = seconds;
-      setIsPlaying(false);
     }
     setCurrentTime(seconds);
   }, []);
@@ -87,7 +110,6 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
       const videoEl = videoRef.current;
       if (!videoEl) return;
       videoEl.pause();
-      setIsPlaying(false);
       const maxDur = videoEl.duration || analysis?.duration || 3.2;
       const nextTime = Math.max(
         0,
@@ -103,11 +125,11 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
     const videoEl = videoRef.current;
     if (!videoEl) return;
     if (videoEl.paused) {
-      videoEl.play();
-      setIsPlaying(true);
+      videoEl.play().catch(() => {
+        // 瀏覽器阻擋自動播放或切換時被中斷，狀態由 video pause/play 事件同步
+      });
     } else {
       videoEl.pause();
-      setIsPlaying(false);
     }
   }, []);
 
@@ -201,10 +223,64 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
     [analysis]
   );
 
-  if (!analysis || !subMetrics) {
+  if (loadState === 'loading') {
     return (
-      <div className="p-16 text-center text-xs text-zinc-500">
+      <div className="lab-card p-16 text-center text-xs text-zinc-500">
         載入分析報告中...
+      </div>
+    );
+  }
+
+  if (loadState === 'not_found') {
+    return (
+      <div className="lab-card p-16 text-center space-y-4">
+        <div className="text-sm font-medium text-zinc-200">
+          找不到對應的動作影片或分析報告
+        </div>
+        <p className="text-xs text-zinc-500 max-w-md mx-auto">
+          該筆紀錄可能已被刪除，或尚未完成分析。請返回影片庫重新選擇影片。
+        </p>
+        <div>
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-medium transition"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            返回影片庫
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadState === 'error' || !analysis || !subMetrics) {
+    return (
+      <div className="lab-card p-16 text-center space-y-4">
+        <div className="text-sm font-medium text-rose-300">
+          讀取分析報告失敗
+        </div>
+        <p className="text-xs text-zinc-400 max-w-md mx-auto">
+          {loadErrorMessage || '無法從本地資料庫讀取報告內容'}
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => setReloadTrigger((n) => n + 1)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-medium transition"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            重試讀取
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-zinc-300 text-xs font-medium transition"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            返回影片庫
+          </button>
+        </div>
       </div>
     );
   }

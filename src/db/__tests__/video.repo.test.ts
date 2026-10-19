@@ -112,4 +112,47 @@ describe('video.repo & Dexie v1 -> v2 migration', () => {
     // 關鍵：原本為 auto (requestedActionType === undefined)，分析後不可把辨識結果覆寫進 requestedActionType
     expect(afterFirstAnalysis?.requestedActionType).toBeUndefined();
   });
+
+  it('resetInterruptedAnalyses resets uploading and processing videos to failed with clear message', async () => {
+    await videoRepository.saveRecordedVideo({
+      id: 'stuck-uploading',
+      blob: new Blob(['u'], { type: 'video/webm' }),
+      mimeType: 'video/webm',
+      duration: 2.0,
+      createdAt: 1000,
+      status: 'uploading',
+      uploadProgress: 40,
+    });
+    await videoRepository.saveRecordedVideo({
+      id: 'stuck-processing',
+      blob: new Blob(['p'], { type: 'video/webm' }),
+      mimeType: 'video/webm',
+      duration: 3.0,
+      createdAt: 2000,
+      status: 'processing',
+      uploadProgress: 100,
+    });
+    await videoRepository.saveRecordedVideo({
+      id: 'normal-local',
+      blob: new Blob(['l'], { type: 'video/webm' }),
+      mimeType: 'video/webm',
+      duration: 2.5,
+      createdAt: 3000,
+      status: 'local_saved',
+    });
+
+    const resetCount = await videoRepository.resetInterruptedAnalyses();
+    expect(resetCount).toBe(2);
+
+    const u = await videoRepository.getVideoById('stuck-uploading');
+    const p = await videoRepository.getVideoById('stuck-processing');
+    const l = await videoRepository.getVideoById('normal-local');
+
+    expect(u?.status).toBe('failed');
+    expect(u?.errorMessage).toBe('上次分析被中斷，請重新送出');
+    expect(p?.status).toBe('failed');
+    expect(p?.errorMessage).toBe('上次分析被中斷，請重新送出');
+    expect(l?.status).toBe('local_saved');
+  });
 });
+
