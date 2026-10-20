@@ -590,6 +590,9 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                     'side_kick',
                     'back_kick',
                     'zenkutsu_dachi',
+                    'gibon_junbijase',
+                    'naranhi_seogi',
+                    'ap_seogi',
                   ] as ActionType[])
                 : disciplineFilter === 'taekwondo'
                   ? ([
@@ -605,6 +608,9 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                       'gedan_barai',
                       'fighting_stance',
                       'zenkutsu_dachi',
+                      'gibon_junbijase',
+                      'naranhi_seogi',
+                      'ap_seogi',
                     ] as ActionType[])
                   : (Object.keys(ACTION_METADATA) as ActionType[])
               ).map((type) => {
@@ -673,7 +679,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                       </div>
                       <div className="mt-2 pl-3.5 flex flex-wrap items-center gap-1.5">
                         <span className="text-[10px] text-zinc-500">
-                          關鍵特徵 (focus_feature_1~4)：
+                          關鍵特徵 (focus_feature_1~{meta.focusFeatures.length})：
                         </span>
                         {meta.focusFeatures.map((featCode, idx) => {
                           const fMeta = FOCUS_FEATURE_METADATA[featCode];
@@ -711,10 +717,10 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
               • <strong>左右座標定義</strong>：所有特徵之左（<code>left_*</code>）／右（<code>right_*</code>）皆為<strong>「選手自己」的左與右</strong>，非螢幕畫面左右。
             </li>
             <li>
-              • <strong>21 項關鍵特徵 (<code>focus_feature_1~4</code>)</strong>：涵蓋 8 項關節夾角（<code>*_deg</code>，單位：度）與 13 項相對髖中心／軀幹尺度位置與步幅（<code>*_rel</code>，其中 <code>x_rel</code> 為水平相對位置、<code>y_rel</code> 為垂直相對位置且向下增加）。
+              • <strong>21 項關鍵特徵 (<code>focus_feature_1~6</code>)</strong>：涵蓋 8 項關節夾角（<code>*_deg</code>，單位：度）與 13 項相對髖中心／軀幹尺度位置與步幅（<code>*_rel</code>，其中 <code>x_rel</code> 為水平相對位置、<code>y_rel</code> 為垂直相對位置且向下增加）。
             </li>
             <li>
-              • <strong>動作時間點對齊</strong>：分析報告支援定位至 <code>start_time_s</code>（動作開始）、<code>completion_time_s</code>（動作到位，介於開始與結束之間）與 <code>end_time_s</code>（動作結束）。
+              • <strong>動作時間點對齊</strong>：分析報告支援定位至 <code>start_time_s</code>（動作開始）、<code>completion_time_s</code>（動作到位，介於開始與結束之間）與 <code>end_time_s</code>（動作結束），並自動解析 <code>0:22.8</code> 格式。
             </li>
             <li>• 計時狀態封裝於獨立葉子組件，錄影期間視訊畫面零重繪；影片二進位資料直接寫入本機 IndexedDB。</li>
           </ul>

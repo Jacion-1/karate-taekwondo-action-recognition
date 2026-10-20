@@ -134,19 +134,19 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
     expect(validated.metrics).toBeUndefined();
   });
 
-  it('supports all 15 Karate (12) and Taekwondo (12) techniques and all 21 CSV focus_features in ACTION_METADATA', () => {
+  it('supports all 18 techniques and all 21 CSV focus_features (up to focus_feature_6) and mm:ss.ms time strings', () => {
     const featureKeys = Object.keys(FOCUS_FEATURE_METADATA) as FocusFeatureCode[];
     expect(featureKeys.length).toBe(21);
 
     const actionKeys = Object.keys(ACTION_METADATA) as ActionType[];
-    expect(actionKeys.length).toBe(15);
+    expect(actionKeys.length).toBe(18);
     for (const act of actionKeys) {
       const meta = ACTION_METADATA[act];
       expect(meta.label.length).toBeGreaterThan(0);
       expect(meta.terminology.length).toBeGreaterThan(0);
       expect(meta.primaryJoints.length).toBeGreaterThan(0);
-      expect(meta.focusFeatures.length).toBeGreaterThanOrEqual(2);
-      expect(meta.focusFeatures.length).toBeLessThanOrEqual(4);
+      expect(meta.focusFeatures.length).toBeGreaterThanOrEqual(4);
+      expect(meta.focusFeatures.length).toBeLessThanOrEqual(6);
       expect(meta.cameraViewHint.length).toBeGreaterThan(0);
       expect(meta.provenance.status).toBe('heuristic-unverified');
       expect(meta.provenance.citation).toBeUndefined();
@@ -158,12 +158,12 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
         totalScore: 86,
         defects: [],
         keyframes: {
-          preparation: 0.5,
-          impact: 1.4,
-          recovery: 2.2,
-          start_time_s: 0.4,
-          completion_time_s: 1.4,
-          end_time_s: 2.5,
+          preparation: '0:0.3',
+          impact: '0:22.8',
+          recovery: '0:23.8',
+          start_time_s: '0:0.3',
+          completion_time_s: '0:22.8',
+          end_time_s: '0:23.8',
         },
         angleTimeSeries: {
           jointName: meta.focusFeatures[0],
@@ -171,7 +171,8 @@ describe('apiClient.interface — strict Zod validator & biomechanics metrics', 
         },
       });
       expect(validated.actionType).toBe(act);
-      expect(validated.keyframes?.completion_time_s).toBe(1.4);
+      expect(validated.keyframes?.start_time_s).toBe(0.3);
+      expect(validated.keyframes?.completion_time_s).toBe(22.8);
     }
   });
 

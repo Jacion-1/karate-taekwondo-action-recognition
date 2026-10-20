@@ -16,6 +16,9 @@ export const ActionTypeSchema = z.enum([
   'hook_kick',
   'zenkutsu_dachi',
   'fighting_stance',
+  'gibon_junbijase',
+  'naranhi_seogi',
+  'ap_seogi',
 ]);
 
 export const FocusFeatureCodeSchema = z.enum([
@@ -109,13 +112,42 @@ export const JointAngleSeriesSchema = z.object({
   points: z.array(AngleTimeSeriesPointSchema),
 });
 
+export function parseCsvSeconds(val: number | string): number {
+  if (typeof val === 'number') return val;
+  const trimmed = val.trim();
+  if (trimmed.includes(':')) {
+    const [minStr, secStr] = trimmed.split(':');
+    const m = Number(minStr);
+    const s = Number(secStr);
+    if (Number.isFinite(m) && Number.isFinite(s) && m >= 0 && s >= 0) {
+      return Number((m * 60 + s).toFixed(3));
+    }
+  }
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : NaN;
+}
+
+export const CsvSecondsSchema = z
+  .union([z.number().nonnegative(), z.string().min(1)])
+  .transform((v, ctx) => {
+    const sec = parseCsvSeconds(v);
+    if (!Number.isFinite(sec) || sec < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '時間格式須為非負秒數或 m:s.ms 字串（例如 0:22.8）',
+      });
+      return z.NEVER;
+    }
+    return sec;
+  });
+
 export const ActionKeyframesSchema = z.object({
-  preparation: z.number().nonnegative(),
-  impact: z.number().nonnegative(),
-  recovery: z.number().nonnegative(),
-  start_time_s: z.number().nonnegative().optional(),
-  completion_time_s: z.number().nonnegative().optional(),
-  end_time_s: z.number().nonnegative().optional(),
+  preparation: CsvSecondsSchema,
+  impact: CsvSecondsSchema,
+  recovery: CsvSecondsSchema,
+  start_time_s: CsvSecondsSchema.optional(),
+  completion_time_s: CsvSecondsSchema.optional(),
+  end_time_s: CsvSecondsSchema.optional(),
 });
 
 export const KeypointItemSchema = z.object({

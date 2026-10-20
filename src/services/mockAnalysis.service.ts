@@ -222,6 +222,9 @@ const DEMO_ACTION_CYCLE: ActionType[] = [
   'hook_kick',
   'zenkutsu_dachi',
   'fighting_stance',
+  'gibon_junbijase',
+  'naranhi_seogi',
+  'ap_seogi',
 ];
 let demoCycleIndex = 0;
 
@@ -241,6 +244,9 @@ const ACTION_CONFIDENCE_MAP: Record<ActionType, number> = {
   hook_kick: 93.5,
   zenkutsu_dachi: 95.4,
   fighting_stance: 95.1,
+  gibon_junbijase: 96.0,
+  naranhi_seogi: 95.7,
+  ap_seogi: 95.3,
 };
 
 /**
@@ -307,6 +313,15 @@ function recognizeActionFromVideo(video: LocalVideoRecord): {
   }
   if (name.includes('fighting') || name.includes('gyeorugi') || name.includes('實戰姿勢')) {
     return { actionType: 'fighting_stance', confidence: 95.1 };
+  }
+  if (name.includes('gibon') || name.includes('junbi') || name.includes('yoi') || name.includes('準備姿勢') || name.includes('用意立')) {
+    return { actionType: 'gibon_junbijase', confidence: 96.0 };
+  }
+  if (name.includes('naranhi') || name.includes('heiko') || name.includes('平行步') || name.includes('平行立')) {
+    return { actionType: 'naranhi_seogi', confidence: 95.7 };
+  }
+  if (name.includes('apseogi') || name.includes('moto') || name.includes('前行步') || name.includes('基立')) {
+    return { actionType: 'ap_seogi', confidence: 95.3 };
   }
 
   // 依據影片 ID 雜湊自動推論動作類別
@@ -879,6 +894,81 @@ export const mockAnalysisService: IAnalysisApiClient & {
             prescription:
               '修正建議：前手肘自然收貼肋骨斜前方（肘角約 95°），拳高維持於鎖骨至下巴高度。',
             severity: 'minor',
+          },
+        ];
+        break;
+
+      case 'gibon_junbijase':
+        primaryJoint = 'left_elbow_deg';
+        totalScore = 90;
+        grade = 'A';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「基本準備姿勢 (GIBON JUNBIJASE / Yoi-dachi)」（信心度 ${confidence}%）。起勢與收勢雙手緩慢下推至丹田前之對稱度良好，惟定型瞬間（約 ${peakTime} 秒）左手腕高度略偏高（left_wrist_y_rel 偏差），建議維持左右雙拳高度與間距完全對稱。`;
+        strengths = [
+          '雙肘自然微彎角度（left/right_elbow_deg）穩定維持於 145° 左右',
+          '平行步下盤重心均衡，上身中軸挺拔無晃動',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'left_elbow_deg',
+            currentValue: 128,
+            standardRange: [135, 158],
+            message: '定型時左手肘彎曲過多，導致左拳位置略高於右拳，破壞準備姿勢左右對稱性。',
+            prescription:
+              '修正建議：雙拳於胸前自然下推至小腹（下丹田）前方約一拳距離，兩拳之間相距一拳寬，雙肘維持對稱微彎。',
+            severity: 'minor',
+          },
+        ];
+        break;
+
+      case 'naranhi_seogi':
+        primaryJoint = 'left_knee_deg';
+        totalScore = 91;
+        grade = 'A';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「平行步／平行立 (NARANHISEOGI / Heiko-dachi)」（信心度 ${confidence}%）。雙腿伸展與軀幹垂直度標準，惟雙腳橫向步距（stance_width_rel）略窄於一足長標準寬度。`;
+        strengths = [
+          '左右膝關節（left/right_knee_deg）與髖關節對稱伸展，重心分配 50:50',
+          '雙腳腳尖平行朝向正前方，無外八字偏移',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'left_knee_deg',
+            currentValue: 162,
+            standardRange: [168, 179],
+            message: '平行立定型時左膝微幅彎曲，雙腿未保持一致挺直。',
+            prescription:
+              '修正建議：雙腳外緣與肩同寬（約一足長），雙膝自然伸直鎖定但不過度死鎖，重心平均落於兩腳掌中心。',
+            severity: 'minor',
+          },
+        ];
+        break;
+
+      case 'ap_seogi':
+        primaryJoint = 'left_knee_deg';
+        totalScore = 88;
+        grade = 'A';
+        feedbackSummary =
+          `系統經資料庫特徵比對識別為「前行步／基立 (APSEOGI / Moto-dachi)」（信心度 ${confidence}%）。自然行走步幅節奏流暢，惟在定型瞬間前膝屈曲過多（138°），接近前屈立（APGUBI）角度，需注意區分兩種步型之高低重心差異。`;
+        strengths = [
+          '前後腳橫向維持一拳至半肩寬度，行進間中軸平穩',
+          '後腳掌外轉約 30° 並踩實地面，符合品勢太極一章規範',
+        ];
+        defects = [
+          {
+            id: `def-${Date.now()}-1`,
+            timestamp: peakTime,
+            jointName: 'left_knee_deg',
+            currentValue: 138,
+            standardRange: [152, 170],
+            message: '前行步（APSEOGI）前膝彎曲過度、跨步偏大，容易被裁判判定與前屈立（APGUBI）混淆。',
+            prescription:
+              '修正建議：前行步前後距離僅約一足長（自然步行一步），雙腿維持高重心自然伸展（前膝角約 155°–168°），與大跨步弓步（APGUBI）明確區隔。',
+            severity: 'moderate',
           },
         ];
         break;

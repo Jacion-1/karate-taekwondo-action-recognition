@@ -113,6 +113,9 @@ components:
         - hook_kick
         - zenkutsu_dachi
         - fighting_stance
+        - gibon_junbijase
+        - naranhi_seogi
+        - ap_seogi
 
     JointName:
       type: string
