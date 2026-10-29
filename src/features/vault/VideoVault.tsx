@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { db } from '../../db/database';
 import { videoRepository } from '../../db/repositories/video.repo';
+import { sessionService } from '../../services/session.service';
+import { MemberHistorySection } from './components/MemberHistorySection';
 import { mockAnalysisService } from '../../services/mockAnalysis.service';
 import { analysisClientFactory } from '../../services/analysisClient.factory';
 import {
@@ -19,6 +21,7 @@ import {
   type LocalVideoRecord,
   type NetworkStatus,
   type UploadStatus,
+  type UserSession,
 } from '../../types/martial-arts.types';
 import { useObjectUrl } from '../../shared/hooks/useObjectUrl';
 import { useToast } from '../../shared/components/ToastContainer';
@@ -86,7 +89,11 @@ const VideoVaultItemCard: React.FC<{
     ? ACTION_METADATA[record.requestedActionType]
     : null;
   const statusInfo = STATUS_DOT[record.status];
-  const sizeMB = ((record.blob?.size ?? 0) / (1024 * 1024)).toFixed(2);
+  const isVideoExpired =
+    !record.blob || record.retentionStatus === 'expired_purged';
+  const sizeMB = isVideoExpired
+    ? '已清理 (0.00 MB)'
+    : `${((record.blob?.size ?? 0) / (1024 * 1024)).toFixed(2)} MB`;
   const isBusy = record.status === 'uploading' || record.status === 'processing';
   const sourceText =
     SOURCE_LABEL[record.sourceType ?? 'camera'] ?? SOURCE_LABEL.camera;
@@ -96,7 +103,26 @@ const VideoVaultItemCard: React.FC<{
       <div>
         {/* 縮圖與預覽容器 */}
         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#0c0c0f] border border-white/[0.05] mb-3.5 group">
-          {showPreview && previewUrl ? (
+          {isVideoExpired ? (
+            <div className="relative w-full h-full">
+              {record.thumbnailDataUrl ? (
+                <img
+                  src={record.thumbnailDataUrl}
+                  alt={recognizedMeta ? recognizedMeta.label : '視訊已過期清理'}
+                  className="w-full h-full object-cover opacity-40 grayscale"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-zinc-950">
+                  <FileVideo className="w-8 h-8 text-zinc-700" />
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-2 text-center">
+                <span className="px-2.5 py-1 rounded-full bg-zinc-900/90 border border-white/10 text-[11px] font-mono text-zinc-300">
+                  視訊已過期清理 · 數據仍保留
+                </span>
+              </div>
+            </div>
+          ) : showPreview && previewUrl ? (
             <video
               src={previewUrl}
               controls
@@ -189,10 +215,10 @@ const VideoVaultItemCard: React.FC<{
         </div>
 
         {/* 精簡檔案資訊 */}
-        <div className="text-[11px] text-zinc-500 font-mono flex items-center gap-2">
+        <div className="text-[11px] text-zinc-500 font-mono flex items-center gap-2 flex-wrap">
           <span>{sourceText}</span>
           <span>·</span>
-          <span>{sizeMB} MB</span>
+          <span>{sizeMB}</span>
           <span>·</span>
           <span>
             {new Date(record.createdAt).toLocaleTimeString([], {
@@ -200,6 +226,12 @@ const VideoVaultItemCard: React.FC<{
               minute: '2-digit',
             })}
           </span>
+          {isVideoExpired && (
+            <>
+              <span>·</span>
+              <span className="text-zinc-400">視訊保存期限已過（數據仍保留）</span>
+            </>
+          )}
         </div>
 
         {record.status === 'failed' && record.errorMessage && (
@@ -234,13 +266,17 @@ const VideoVaultItemCard: React.FC<{
 
       {/* 底部操作列 */}
       <div className="flex items-center justify-between gap-2 pt-3 border-t border-white/[0.05]">
-        <button
-          type="button"
-          onClick={() => setShowPreview((prev) => !prev)}
-          className="text-xs text-zinc-400 hover:text-white transition"
-        >
-          {showPreview ? '關閉預覽' : '播放原片'}
-        </button>
+        {isVideoExpired ? (
+          <span className="text-xs text-zinc-600 font-mono">視訊已過期清理</span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowPreview((prev) => !prev)}
+            className="text-xs text-zinc-400 hover:text-white transition"
+          >
+            {showPreview ? '關閉預覽' : '播放原片'}
+          </button>
+        )}
 
         <div className="flex items-center gap-2">
           {record.status === 'completed' && record.analysisId ? (
@@ -292,6 +328,22 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
   onOpenAnalysis,
 }) => {
   const { pushToast } = useToast();
+  const [userSession, setUserSession] = useState<UserSession>(() =>
+    sessionService.getSession()
+  );
+
+  useEffect(() => {
+    return sessionService.subscribe(setUserSession);
+  }, []);
+
+  const historyRecords = useLiveQuery(
+    () =>
+      videoRepository.getMemberHistoryRecords(
+        userSession.authStatus === 'member' ? userSession.userId : undefined
+      ),
+    [userSession.authStatus, userSession.userId]
+  );
+
   const [isCreatingDemo, setIsCreatingDemo] = useState(false);
   const [isBatchAnalyzing, setIsBatchAnalyzing] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{
@@ -486,6 +538,14 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
 
   return (
     <div className="space-y-8">
+      {/* 會員歷史紀錄與長期走勢圖（或訪客引導提示） */}
+      <MemberHistorySection
+        userSession={userSession}
+        historyRecords={historyRecords ?? []}
+        onOpenAnalysis={onOpenAnalysis}
+        onLoginAsMember={() => sessionService.loginAsMember()}
+      />
+
       {/* 極簡標題與操作列 */}
       <div className="flex flex-wrap items-end justify-between gap-4 pb-6 border-b border-white/[0.06]">
         <div>
