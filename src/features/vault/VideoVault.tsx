@@ -86,7 +86,7 @@ const VideoVaultItemCard: React.FC<{
     ? ACTION_METADATA[record.requestedActionType]
     : null;
   const statusInfo = STATUS_DOT[record.status];
-  const sizeMB = (record.blob.size / (1024 * 1024)).toFixed(2);
+  const sizeMB = ((record.blob?.size ?? 0) / (1024 * 1024)).toFixed(2);
   const isBusy = record.status === 'uploading' || record.status === 'processing';
   const sourceText =
     SOURCE_LABEL[record.sourceType ?? 'camera'] ?? SOURCE_LABEL.camera;

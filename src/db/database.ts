@@ -46,6 +46,12 @@ export class MartialArtsDatabase extends Dexie {
         analyses: 'analysisId, videoId, actionType, grade',
       })
       .upgrade(upgradeVideosV1ToV2);
+
+    this.version(3).stores({
+      videos:
+        'id, createdAt, status, requestedActionType, recognizedActionType, analysisId, userId, retentionStatus, expiresAt',
+      analyses: 'analysisId, videoId, actionType, grade',
+    });
   }
 }
 

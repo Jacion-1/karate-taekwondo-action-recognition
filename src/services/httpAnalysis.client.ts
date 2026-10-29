@@ -430,6 +430,16 @@ export class HttpRestAnalysisClient implements IAnalysisApiClient {
         }
       };
 
+      if (!video.blob) {
+        reject(
+          new ApiClientError(
+            '視訊二進位已過期或不存在，無法上傳分析',
+            'INVALID_PAYLOAD'
+          )
+        );
+        return;
+      }
+
       const formData = new FormData();
       const ext = video.mimeType.includes('mp4') ? 'mp4' : 'webm';
       formData.append(

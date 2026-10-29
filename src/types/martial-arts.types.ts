@@ -721,7 +721,7 @@ export const JOINT_LABELS: Record<JointName, string> = {
 // recognizedActionType: 分析完成後由後端／模擬器辨識出的動作類別
 export interface LocalVideoRecord {
   id: string;
-  blob: Blob;
+  blob?: Blob;
   mimeType: string;
   duration: number;
   createdAt: number;
@@ -734,6 +734,10 @@ export interface LocalVideoRecord {
   thumbnailDataUrl?: string;
   sourceType?: VideoSourceType;
   fileName?: string;
+  userId?: string;
+  expiresAt?: number;
+  purgedAt?: number;
+  retentionStatus?: VideoRetentionStatus;
 }
 
 // 3. 細項評估指標（stabilityScore 與 explosivenessScore 僅在後端 metrics 提供時存在，絕不由前端推算）
@@ -742,4 +746,52 @@ export interface BiomechanicsSubMetrics {
   peakDeviationDeg: number;
   stabilityScore?: number;
   explosivenessScore?: number;
+}
+
+// 4. 使用者身分、資料留存與歷史查詢規格
+export const VIDEO_RETENTION_DAYS = 7 as const;
+export const VIDEO_RETENTION_MS = VIDEO_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+export type AuthStatus = 'guest' | 'member';
+
+export type VideoRetentionStatus =
+  | 'ephemeral_memory'
+  | 'active'
+  | 'expired_purged';
+
+export interface UserSession {
+  authStatus: AuthStatus;
+  userId: string;
+  displayName: string;
+  email?: string;
+  loginAt?: number;
+}
+
+export interface StoragePayload<T> {
+  recordId: string;
+  ownerId: string;
+  createdAt: number;
+  expiresAt: number | null;
+  retentionStatus: VideoRetentionStatus;
+  purgedAt?: number;
+  data: T;
+}
+
+export interface HistoryRecordMeta {
+  analysisId: string;
+  videoId: string;
+  userId: string;
+  createdAt: number;
+  actionType: ActionType;
+  totalScore: number;
+  grade?: GradeLevel;
+  confidence?: number;
+  duration: number;
+  defectCount: number;
+  feedbackSummary?: string;
+  source: AnalysisSource;
+  videoRetentionStatus: VideoRetentionStatus;
+  videoExpiresAt: number;
+  videoPurgedAt?: number;
+  thumbnailDataUrl?: string;
 }
