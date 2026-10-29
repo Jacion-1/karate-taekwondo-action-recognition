@@ -4,6 +4,7 @@ import type {
   LocalVideoRecord,
 } from '../types/martial-arts.types';
 import { videoRepository } from '../db/repositories/video.repo';
+import { sessionService } from './session.service';
 import {
   ApiClientError,
   validateAnalysisResponse,
@@ -314,10 +315,17 @@ export class HttpRestAnalysisClient implements IAnalysisApiClient {
               config,
               options?.signal
             );
-            try {
-              await videoRepository.saveAnalysisResult(video.id, validated);
-            } catch {
-              // ignore DB error
+            const isGuestPoll =
+              video.retentionStatus === 'ephemeral_memory' ||
+              sessionService.getSession().authStatus === 'guest';
+            if (isGuestPoll) {
+              sessionService.saveGuestAnalysis(video.id, validated);
+            } else {
+              try {
+                await videoRepository.saveAnalysisResult(video.id, validated);
+              } catch {
+                // ignore DB error
+              }
             }
             resolve(validated);
           } catch (err) {
@@ -351,10 +359,17 @@ export class HttpRestAnalysisClient implements IAnalysisApiClient {
               xhr.response ??
               (xhr.responseText ? JSON.parse(xhr.responseText) : null);
             const validated = validateAnalysisResponse(payload, video.id);
-            try {
-              await videoRepository.saveAnalysisResult(video.id, validated);
-            } catch {
-              // ignore DB error
+            const isGuestSync =
+              video.retentionStatus === 'ephemeral_memory' ||
+              sessionService.getSession().authStatus === 'guest';
+            if (isGuestSync) {
+              sessionService.saveGuestAnalysis(video.id, validated);
+            } else {
+              try {
+                await videoRepository.saveAnalysisResult(video.id, validated);
+              } catch {
+                // ignore DB error
+              }
             }
             resolve(validated);
           } catch (err) {

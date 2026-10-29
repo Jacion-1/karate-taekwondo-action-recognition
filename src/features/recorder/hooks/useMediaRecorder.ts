@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ActionType, LocalVideoRecord } from '../../../types/martial-arts.types';
 import { videoRepository } from '../../../db/repositories/video.repo';
+import { sessionService } from '../../../services/session.service';
 import { extractVideoMetadataAndThumbnail } from '../../../shared/utils/videoMedia.utils';
 import { fixWebmDuration } from '../../../shared/utils/webmDurationFix';
 
@@ -27,6 +28,7 @@ export function getExtensionFromMimeType(mimeType: string): 'mp4' | 'webm' {
  * 嚴格遵守架構規範 3（非同步儲存與主執行緒解耦）：
  * 視訊錄製完成後的二進位物件 (Blob) 修補 WebM 時長後直接寫入 IndexedDB，
  * 並自動擷取首幀縮圖，不暫存於全域反應式狀態中；卸載時若仍在錄影則自動停止且不對已卸載組件 setState。
+ * 訪客模式下直接存入 sessionService 記憶體暫態儲存，會員模式則寫入 IndexedDB。
  */
 export function useMediaRecorder(onVideoSaved?: (videoId: string) => void) {
   const [isRecording, setIsRecording] = useState(false);
@@ -105,10 +107,19 @@ export function useMediaRecorder(onVideoSaved?: (videoId: string) => void) {
           fileName: `Camera-${new Date().toISOString().slice(11, 19).replace(/:/g, '')}.${ext}`,
         };
 
-        try {
-          await videoRepository.saveRecordedVideo(record);
-        } catch {
-          // 忽略卸載後 DB 寫入錯誤
+        const session = sessionService.getSession();
+        if (session.authStatus === 'guest') {
+          sessionService.saveGuestVideo(record);
+        } else {
+          try {
+            await videoRepository.saveRecordedVideo({
+              ...record,
+              userId: session.userId,
+              retentionStatus: 'active',
+            });
+          } catch {
+            // 忽略卸載後 DB 寫入錯誤
+          }
         }
 
         if (mountedRef.current) {

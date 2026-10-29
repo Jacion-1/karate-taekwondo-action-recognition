@@ -25,6 +25,7 @@ import { RecordingTimer } from './components/RecordingTimer';
 import { mockAnalysisService } from '../../services/mockAnalysis.service';
 import { analysisClientFactory } from '../../services/analysisClient.factory';
 import { videoRepository } from '../../db/repositories/video.repo';
+import { sessionService } from '../../services/session.service';
 import { extractVideoMetadataAndThumbnail } from '../../shared/utils/videoMedia.utils';
 import { useToast } from '../../shared/components/ToastContainer';
 
@@ -95,10 +96,13 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
     (savedId) => {
       if (!mountedRef.current) return;
       setRecentSavedId(savedId);
+      const isGuest = sessionService.getSession().authStatus === 'guest';
       pushToast({
         type: 'success',
-        title: '拍攝完成並已存入影片庫',
-        message: '可點擊下方「立即識別並查看報告」直接進入分析',
+        title: isGuest ? '拍攝完成（訪客暫存）' : '拍攝完成並已存入影片庫',
+        message: isGuest
+          ? '已暫存於當前頁面記憶體（訪客模式），可點擊下方直接進入分析'
+          : '可點擊下方「立即識別並查看報告」直接進入分析',
       });
     }
   );
@@ -153,13 +157,16 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
       const id = await mockAnalysisService.createSyntheticDemoVideo(preferred);
       if (!mountedRef.current) return;
       setRecentSavedId(id);
+      const isGuest = sessionService.getSession().authStatus === 'guest';
       pushToast({
         type: 'success',
         title:
           recognitionMode === 'auto'
             ? '已產生待識別動作範例影片'
             : `已產生「${ACTION_METADATA[recognitionMode].label}」專項範例影片`,
-        message: '可立即執行資料庫比對與動作評估',
+        message: isGuest
+          ? '已暫存於當前頁面記憶體（訪客模式）· 可立即執行資料庫比對與動作評估'
+          : '可立即執行資料庫比對與動作評估',
       });
     } finally {
       if (mountedRef.current) {
@@ -172,7 +179,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
     if (!recentSavedId || isAnalyzingInstant) return;
     setIsAnalyzingInstant(true);
     try {
-      const record = await videoRepository.getVideoById(recentSavedId);
+      const record = sessionService.getGuestVideo(recentSavedId) ?? (await videoRepository.getVideoById(recentSavedId));
       if (!record) return;
       const targetRecord: LocalVideoRecord =
         recognitionMode !== 'auto'
@@ -257,13 +264,25 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
         sourceType: 'file_import',
         fileName: file.name,
       };
-      await videoRepository.saveRecordedVideo(record);
+      const session = sessionService.getSession();
+      if (session.authStatus === 'guest') {
+        sessionService.saveGuestVideo(record);
+      } else {
+        await videoRepository.saveRecordedVideo({
+          ...record,
+          userId: session.userId,
+          retentionStatus: 'active',
+        });
+      }
       if (!mountedRef.current) return;
       setRecentSavedId(id);
+      const isGuest = session.authStatus === 'guest';
       pushToast({
         type: 'success',
-        title: '影片已匯入影片庫',
-        message: `${file.name} (${duration}s) — 可立即執行識別分析`,
+        title: isGuest ? '影片已暫存（訪客模式）' : '影片已匯入影片庫',
+        message: isGuest
+          ? `${file.name} (${duration}s) — 已暫存於當前頁面記憶體（訪客模式）`
+          : `${file.name} (${duration}s) — 可立即執行識別分析`,
       });
     } catch (err) {
       if (!mountedRef.current) return;

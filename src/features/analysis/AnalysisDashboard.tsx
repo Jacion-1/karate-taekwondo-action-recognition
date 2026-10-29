@@ -10,8 +10,11 @@ import {
   StepBack,
   StepForward,
   Video,
+  User,
+  FileVideo,
 } from 'lucide-react';
 import { videoRepository } from '../../db/repositories/video.repo';
+import { sessionService } from '../../services/session.service';
 import {
   ACTION_METADATA,
   JOINT_LABELS,
@@ -20,6 +23,7 @@ import {
   type ActionType,
   type JointName,
   type LocalVideoRecord,
+  type UserSession,
 } from '../../types/martial-arts.types';
 import { computeBiomechanicsMetrics } from '../../services/apiClient.interface';
 import { useObjectUrl } from '../../shared/hooks/useObjectUrl';
@@ -56,6 +60,46 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 }) => {
   const { pushToast } = useToast();
   const [videoRecord, setVideoRecord] = useState<LocalVideoRecord | null>(null);
+  const [userSession, setUserSession] = useState<UserSession>(() =>
+    sessionService.getSession()
+  );
+  const [isPromoting, setIsPromoting] = useState<boolean>(false);
+
+  useEffect(() => {
+    return sessionService.subscribe(setUserSession);
+  }, []);
+
+  const handlePromoteToMember = async () => {
+    if (!analysis || isPromoting) return;
+    setIsPromoting(true);
+    try {
+      sessionService.loginAsMember();
+      const targetVideoId = videoRecord?.id || analysis.videoId;
+      await sessionService.promoteGuestRecordToMember(
+        targetVideoId,
+        analysis.analysisId
+      );
+      const updatedVid =
+        (await videoRepository.getVideoById(targetVideoId)) ??
+        sessionService.getGuestVideo(targetVideoId);
+      if (updatedVid) {
+        setVideoRecord(updatedVid);
+      }
+      pushToast({
+        type: 'success',
+        title: '登入成功',
+        message: '已登入正式會員並永久保存此筆訓練紀錄',
+      });
+    } catch (err) {
+      pushToast({
+        type: 'error',
+        title: '儲存失敗',
+        message: err instanceof Error ? err.message : '保存失敗',
+      });
+    } finally {
+      setIsPromoting(false);
+    }
+  };
   const [analysis, setAnalysis] = useState<ActionAnalysisResponse | null>(null);
   const [loadState, setLoadState] = useState<
     'loading' | 'ready' | 'not_found' | 'error'
@@ -79,20 +123,35 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
     setDetectedFps(null);
 
     Promise.all([
-      videoId ? videoRepository.getVideoById(videoId) : Promise.resolve(undefined),
-      videoRepository.getAnalysisById(analysisId),
+      (async () => {
+        if (!videoId) return undefined;
+        return (
+          (await videoRepository.getVideoById(videoId)) ??
+          sessionService.getGuestVideo(videoId)
+        );
+      })(),
+      (async () => {
+        return (
+          (await videoRepository.getAnalysisById(analysisId)) ??
+          sessionService.getGuestAnalysis(analysisId)
+        );
+      })(),
     ])
       .then(async ([vid, ana]) => {
         if (!mounted) return;
-        const resolvedVid =
-          vid ?? (ana?.videoId ? await videoRepository.getVideoById(ana.videoId) : undefined);
+        let resolvedVid = vid;
+        if (!resolvedVid && ana?.videoId) {
+          resolvedVid =
+            (await videoRepository.getVideoById(ana.videoId)) ??
+            sessionService.getGuestVideo(ana.videoId);
+        }
 
-        if (!ana || !resolvedVid) {
+        if (!ana) {
           setLoadState('not_found');
           return;
         }
 
-        setVideoRecord(resolvedVid);
+        setVideoRecord(resolvedVid ?? null);
         setAnalysis(ana);
         setSelectedJoint(ana.angleTimeSeries.jointName);
         setLoadState('ready');
@@ -403,9 +462,36 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   const actionMeta = ACTION_METADATA[analysis.actionType];
   const keyframes = analysis.keyframes;
   const displayDuration = analysis.duration ?? videoRecord?.duration ?? 0;
+  const isVideoExpired =
+    !videoRecord?.blob || videoRecord?.retentionStatus === 'expired_purged';
 
   return (
     <div className="space-y-6">
+      {/* 訪客模式：提示登入以永久保存歷史 */}
+      {(userSession.authStatus === 'guest' ||
+        videoRecord?.retentionStatus === 'ephemeral_memory') && (
+        <div
+          role="region"
+          aria-label="訪客模式儲存提示"
+          className="bg-zinc-900/90 border border-slate-700/50 rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs"
+        >
+          <div className="flex items-center gap-2 text-zinc-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+            <span>
+              訪客模式 — 本次分析數據與視訊僅暫存於當前頁面記憶體，重新整理或切換回首頁後將自動銷毀。
+            </span>
+          </div>
+          <button
+            type="button"
+            disabled={isPromoting}
+            onClick={handlePromoteToMember}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium transition text-xs shrink-0 disabled:opacity-50"
+          >
+            <User className="w-3.5 h-3.5 text-zinc-800" />
+            <span>登入以永久保存歷史</span>
+          </button>
+        </div>
+      )}
       {/* Phase 6.1: 當結果的 source === 'mock' 時，報告頁頂部顯示固定的醒目標示 */}
       {analysis.source === 'mock' && (
         <div
@@ -552,8 +638,20 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         {/* 左欄 (5 cols)：Kinovea 慢動作角度疊加檢視器 + JAB AI 教練講評與亮點 */}
         <div className="lg:col-span-5 space-y-6">
           <div className="lab-card overflow-hidden">
-            <div className="relative aspect-video bg-[#0c0c0f] flex items-center justify-center">
-              {videoUrl ? (
+            <div className="relative aspect-video bg-[#0c0c0f] flex items-center justify-center p-6 text-center">
+              {isVideoExpired ? (
+                <div className="space-y-3 max-w-sm">
+                  <div className="inline-flex p-3 rounded-full bg-zinc-900 border border-white/[0.06] text-zinc-400">
+                    <FileVideo className="w-6 h-6" />
+                  </div>
+                  <div className="text-sm font-semibold text-zinc-200">
+                    視訊保存期限已過（數據仍保留）
+                  </div>
+                  <p className="text-xs text-zinc-500 leading-relaxed">
+                    原始訓練視訊已超過 7 天保存期限並自動清理以釋放本機空間；該筆紀錄之結構化數據評分、關節角度時序與教練修正建議仍完整保留。
+                  </p>
+                </div>
+              ) : videoUrl ? (
                 <video
                   ref={videoRef}
                   src={videoUrl}
@@ -568,8 +666,8 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 <div className="text-xs text-zinc-500">載入影片中...</div>
               )}
 
-              {/* 左上角：Kinovea 視覺量角器疊加開關 — 僅在有 frames (keypoints) 時顯示 */}
-              {analysis.frames && analysis.frames.length > 0 && (
+              {/* 左上角：Kinovea 視覺量角器疊加開關 — 僅在未過期且有 frames 時顯示 */}
+              {!isVideoExpired && analysis.frames && analysis.frames.length > 0 && (
                 <button
                   type="button"
                   aria-label={showKinoveaOverlay ? '關閉角度標記疊加層' : '開啟角度標記疊加層'}
@@ -585,8 +683,9 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 </button>
               )}
 
-              {/* Kinovea 風格骨架與關節量角器 Canvas 疊加層（對齊實際影片畫面，無 frames 時完全不顯示） */}
-              {showKinoveaOverlay &&
+              {/* Kinovea 風格骨架與關節量角器 Canvas 疊加層（僅在未過期時） */}
+              {!isVideoExpired &&
+                showKinoveaOverlay &&
                 analysis.frames &&
                 analysis.frames.length > 0 &&
                 currentPointHud && (
@@ -600,8 +699,8 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   />
                 )}
 
-              {/* 左下角：Kinovea 即時關鍵特徵與偏差狀態 HUD */}
-              {currentPointHud && (
+              {/* 左下角：Kinovea 即時關鍵特徵與偏差狀態 HUD（僅在未過期時） */}
+              {!isVideoExpired && currentPointHud && (
                 <div className="pointer-events-none absolute bottom-3 left-3 z-10 px-3 py-1.5 rounded-xl bg-zinc-950/85 border border-white/[0.08] backdrop-blur-md font-mono text-xs flex items-center gap-2">
                   <span className="text-zinc-300">
                     {currentPointHud.jointLabel}
@@ -625,15 +724,17 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 </div>
               )}
 
-              {/* 右上角時間點 */}
-              <div className="pointer-events-none absolute top-3 right-3 z-10 px-2.5 py-1 rounded-md bg-zinc-950/80 font-mono text-[11px] text-zinc-300 tabular-nums">
-                {currentTime.toFixed(2)}s
-                {displayDuration > 0 ? ` / ${displayDuration.toFixed(1)}s` : ''}
-              </div>
+              {/* 右上角時間點（僅在未過期時） */}
+              {!isVideoExpired && (
+                <div className="pointer-events-none absolute top-3 right-3 z-10 px-2.5 py-1 rounded-md bg-zinc-950/80 font-mono text-[11px] text-zinc-300 tabular-nums">
+                  {currentTime.toFixed(2)}s
+                  {displayDuration > 0 ? ` / ${displayDuration.toFixed(1)}s` : ''}
+                </div>
+              )}
             </div>
 
             {/* CSV 分段與關鍵時間點快速定位列 (start_time_s / completion_time_s / end_time_s) */}
-            {keyframes && (
+            {!isVideoExpired && keyframes && (
               <div className="px-4 py-2.5 bg-zinc-950/50 border-t border-white/[0.05] flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="text-[11px] text-zinc-500">
                   動作時間定位 (start / completion / end)
@@ -673,7 +774,8 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
               </div>
             )}
 
-            {/* 乾淨的播放與慢動作控制列 */}
+            {/* 乾淨的播放與慢動作控制列（影片過期時隱藏） */}
+            {!isVideoExpired && (
             <div className="p-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.05]">
               <div className="flex items-center gap-1.5">
                 <button
@@ -742,6 +844,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 ))}
               </div>
             </div>
+            )}
           </div>
 
           {/* JAB AI / Sensei AI 教練筆記與動作亮點卡片 — 僅在有回傳對應欄位時顯示 */}

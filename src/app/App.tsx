@@ -1,8 +1,9 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, User, LogOut } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { videoRepository } from '../db/repositories/video.repo';
+import { sessionService } from '../services/session.service';
 import { useNetworkStatus } from '../shared/hooks/useNetworkStatus';
 import { useHashRoute } from '../shared/hooks/useHashRoute';
 import { RecordWorkspace } from '../features/recorder/RecordWorkspace';
@@ -10,7 +11,7 @@ import { VideoVault } from '../features/vault/VideoVault';
 import { ToastProvider } from '../shared/components/ToastContainer';
 import { ApiConnectionDrawer } from '../shared/components/ApiConnectionDrawer';
 import { analysisClientFactory } from '../services/analysisClient.factory';
-import type { ActionType } from '../types/martial-arts.types';
+import type { ActionType, UserSession } from '../types/martial-arts.types';
 import type { ApiConnectionConfig } from '../services/apiClient.interface';
 
 const LazyAnalysisDashboard = lazy(() =>
@@ -32,6 +33,15 @@ export const App: React.FC = () => {
   );
   const [isClientHealthy, setIsClientHealthy] = useState<boolean>(true);
 
+  // 使用者工作階段狀態管理
+  const [userSession, setUserSession] = useState<UserSession>(() =>
+    sessionService.getSession()
+  );
+
+  useEffect(() => {
+    return sessionService.subscribe(setUserSession);
+  }, []);
+
   // 當路由位於 /report/:analysisId 時，同步更新最近開啟的報告紀錄
   useEffect(() => {
     if (route.page === 'analysis' && route.analysisId) {
@@ -42,10 +52,13 @@ export const App: React.FC = () => {
     }
   }, [route.page, route.analysisId, route.videoId]);
 
-  // 啟動時重設上次中斷殘留的 uploading / processing 紀錄，並請求持久化儲存空間
+  // 啟動時重設上次中斷殘留的 uploading / processing 紀錄，自動清理超過 7 天的過期視訊二進位，並請求持久化儲存空間
   useEffect(() => {
     videoRepository.resetInterruptedAnalyses().catch(() => {
       // 忽略啟動清理異常
+    });
+    videoRepository.pruneExpiredVideos().catch(() => {
+      // 忽略過期清理異常
     });
     if (
       typeof navigator !== 'undefined' &&
@@ -57,6 +70,22 @@ export const App: React.FC = () => {
       });
     }
   }, []);
+
+  // 訪客切換回首頁自動銷毀機制：離開報告回首頁時立即銷毀暫態記憶體與 lastReport
+  useEffect(() => {
+    if (route.page === 'record' && userSession.authStatus === 'guest') {
+      sessionService.clearGuestSessionData();
+      setLastReport(null);
+    }
+  }, [route.page, userSession.authStatus]);
+
+  const handleNavigateToRecord = (focusAction?: ActionType | 'auto') => {
+    if (userSession.authStatus === 'guest') {
+      sessionService.clearGuestSessionData();
+      setLastReport(null);
+    }
+    navigateToRecord(focusAction);
+  };
 
   useEffect(() => {
     return analysisClientFactory.subscribe(setApiConfig);
@@ -98,7 +127,7 @@ export const App: React.FC = () => {
   };
 
   const handleReverifyAction = (actionType: ActionType) => {
-    navigateToRecord(actionType);
+    handleNavigateToRecord(actionType);
   };
 
   const canSubmitAnalysis =
@@ -129,7 +158,7 @@ export const App: React.FC = () => {
               <button
                 type="button"
                 aria-current={route.page === 'record' ? 'page' : undefined}
-                onClick={() => navigateToRecord(route.focusAction)}
+                onClick={() => handleNavigateToRecord(route.focusAction)}
                 className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
                   route.page === 'record'
                     ? 'bg-white text-zinc-950 shadow-sm'
@@ -181,8 +210,35 @@ export const App: React.FC = () => {
               )}
             </nav>
 
-            {/* 右側：極簡連線與後端設定控制 */}
+            {/* 右側：極簡連線、身分切換與後端設定控制 */}
             <div className="flex items-center gap-2">
+              {/* 身分切換控制項 */}
+              {userSession.authStatus === 'guest' ? (
+                <button
+                  type="button"
+                  onClick={() => sessionService.loginAsMember()}
+                  title="目前為訪客體驗，點擊切換為正式會員"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 hover:text-white transition"
+                >
+                  <User className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>訪客模式 · 登入會員</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    sessionService.logoutToGuest();
+                    setLastReport(null);
+                  }}
+                  title="點擊登出切換回訪客模式"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-emerald-500/20 text-xs text-emerald-400 hover:text-emerald-300 transition"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>{userSession.displayName || '正式會員'}</span>
+                  <LogOut className="w-3 h-3 text-zinc-400 ml-0.5" />
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={toggleSimulateOffline}
@@ -264,4 +320,3 @@ export const App: React.FC = () => {
     </ToastProvider>
   );
 };
-

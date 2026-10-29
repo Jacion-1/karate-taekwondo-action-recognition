@@ -11,6 +11,7 @@ import {
   type LocalVideoRecord,
 } from '../types/martial-arts.types';
 import { videoRepository } from '../db/repositories/video.repo';
+import { sessionService } from './session.service';
 import {
   ApiClientError,
   validateAnalysisResponse,
@@ -1149,7 +1150,14 @@ export const mockAnalysisService: IAnalysisApiClient & {
 
     try {
       const validated = validateAnalysisResponse(rawResponse, videoId);
-      await videoRepository.saveAnalysisResult(videoId, validated);
+      const isGuest =
+        video.retentionStatus === 'ephemeral_memory' ||
+        sessionService.getSession().authStatus === 'guest';
+      if (isGuest) {
+        sessionService.saveGuestAnalysis(videoId, validated);
+      } else {
+        await videoRepository.saveAnalysisResult(videoId, validated);
+      }
       return validated;
     } catch (err) {
       const apiErr =
@@ -1214,7 +1222,16 @@ export const mockAnalysisService: IAnalysisApiClient & {
           sourceType: 'synthetic_demo',
           fileName: `MotionCapture-${simulatedAction}.webm`,
         };
-        await videoRepository.saveRecordedVideo(record);
+        const session = sessionService.getSession();
+        if (session.authStatus === 'guest') {
+          sessionService.saveGuestVideo(record);
+        } else {
+          await videoRepository.saveRecordedVideo({
+            ...record,
+            userId: session.userId,
+            retentionStatus: 'active',
+          });
+        }
         resolve(id);
       };
 
