@@ -32,11 +32,12 @@ interface JointAngleChartProps {
 }
 
 const TOOLTIP_CONTENT_STYLE: React.CSSProperties = {
-  backgroundColor: '#18181b',
-  borderColor: 'rgba(255,255,255,0.08)',
-  borderRadius: '0.75rem',
+  backgroundColor: '#151E2D',
+  borderColor: '#26354D',
+  borderRadius: '0.625rem',
   fontSize: '12px',
-  color: '#f4f4f5',
+  color: '#F8FAFC',
+  boxShadow: '0 4px 20px -2px rgba(5, 10, 20, 0.45)',
 };
 
 const CHART_MARGIN = { top: 8, right: 12, left: 0, bottom: 0 };
@@ -76,26 +77,26 @@ const StaticRechartsLayer: React.FC<StaticRechartsLayerProps> = React.memo(
         >
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="rgba(255,255,255,0.04)"
+            stroke="#1E2B3E"
             vertical={false}
           />
           <XAxis
             dataKey="time"
             type="number"
             domain={['dataMin', 'dataMax']}
-            stroke="#52525b"
-            tick={{ fill: '#71717a', fontSize: 11 }}
+            stroke="#94A3B8"
+            tick={{ fill: '#94A3B8', fontSize: 12 }}
             tickLine={false}
-            axisLine={false}
+            axisLine={{ stroke: '#1E2B3E' }}
             unit="s"
           />
           <YAxis
             width={Y_AXIS_WIDTH}
             domain={isRelative ? ['auto', 'auto'] : [30, 190]}
-            stroke="#52525b"
-            tick={{ fill: '#71717a', fontSize: 11 }}
+            stroke="#94A3B8"
+            tick={{ fill: '#94A3B8', fontSize: 12 }}
             tickLine={false}
-            axisLine={false}
+            axisLine={{ stroke: '#1E2B3E' }}
             unit={isRelative ? '' : '°'}
           />
           <Tooltip
@@ -103,28 +104,28 @@ const StaticRechartsLayer: React.FC<StaticRechartsLayerProps> = React.memo(
             labelFormatter={(label) => `${label}s`}
           />
 
-          {/* 標準容許範圍 [standardMin, standardMax] */}
+          {/* 標準容許範圍 [standardMin, standardMax] (翠綠 #10B981，填色透明度 0.16) */}
           <Area
             type="monotone"
             dataKey="standardBand"
             name={isRelative ? '標準相對範圍 (rel)' : '標準角度範圍 (°)'}
-            fill="#10b981"
-            fillOpacity={0.14}
-            stroke="#10b981"
-            strokeOpacity={0.35}
+            fill="#10B981"
+            fillOpacity={0.16}
+            stroke="#34D399"
+            strokeOpacity={0.5}
             strokeDasharray="3 3"
             isAnimationActive={false}
           />
 
-          {/* 學員實測特徵曲線（使用高對比純白線條，極簡俐落） */}
+          {/* 學員實測特徵曲線（亮電光藍 #38BDF8，線寬 2.5px） */}
           <Line
             type="monotone"
             dataKey="actualAngle"
             name={isRelative ? '實測相對位置 (rel)' : '實測角度 (°)'}
-            stroke="#ffffff"
-            strokeWidth={2}
+            stroke="#38BDF8"
+            strokeWidth={2.5}
             dot={false}
-            activeDot={{ r: 4, fill: '#ffffff' }}
+            activeDot={{ r: 5, fill: '#38BDF8', stroke: '#0D131D', strokeWidth: 2 }}
             isAnimationActive={false}
           />
 
@@ -135,8 +136,8 @@ const StaticRechartsLayer: React.FC<StaticRechartsLayerProps> = React.memo(
               x={Number(defect.timestamp.toFixed(1))}
               y={defect.currentValue}
               r={5}
-              fill="#f43f5e"
-              stroke="#09090b"
+              fill="#F43F5E"
+              stroke="#0D131D"
               strokeWidth={2}
             />
           ))}
@@ -154,7 +155,7 @@ interface PlayheadCursorProps {
 }
 
 /**
- * 獨立輕量時間游標小元件：承載高頻 currentTime 更新，避免觸發 Recharts SVG 重新計算。
+ * 獨立輕量時間游標小元件：Strava 暖橘 #F97316 虛線配暖橘時間碼膠囊
  */
 const PlayheadCursor: React.FC<PlayheadCursorProps> = React.memo(
   ({ currentTime, minTime, maxTime }) => {
@@ -171,10 +172,10 @@ const PlayheadCursor: React.FC<PlayheadCursorProps> = React.memo(
         }}
       >
         <div
-          className="absolute top-0 bottom-0 border-l border-dashed border-zinc-400/80"
+          className="absolute top-0 bottom-0 border-l-2 border-dashed border-brand-accent shadow-sm"
           style={{ left: `${percent}%` }}
         >
-          <span className="absolute top-0.5 left-1 px-1 py-0.5 rounded bg-zinc-950/90 text-[10px] font-mono text-zinc-300 tabular-nums whitespace-nowrap">
+          <span className="absolute top-0.5 left-1 px-1.5 py-0.5 rounded-badge bg-brand-accent text-caption font-mono font-semibold text-white tabular-nums whitespace-nowrap shadow-md">
             {currentTime.toFixed(2)}s
           </span>
         </div>
@@ -236,14 +237,14 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-semibold text-white">
+              <h3 className="text-heading-md font-semibold text-app-primary">
                 關鍵特徵時序曲線 (focus_feature_1~6)
               </h3>
-              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] font-mono text-[10px] text-zinc-400 shrink-0 whitespace-nowrap">
+              <span className="px-2 py-0.5 rounded-badge bg-app-well border border-app-border font-mono text-caption text-app-muted shrink-0 whitespace-nowrap">
                 {activeFeatureName}
               </span>
             </div>
-            <p className="text-xs text-zinc-400 mt-1">
+            <p className="text-caption text-app-muted mt-1">
               {csvMeta
                 ? `計算方式：${csvMeta.formula} · 推薦情境：${csvMeta.scenario}（左右為選手自身之左右）`
                 : '點擊圖表任意時間點可同步定位左側慢動作影片'}
@@ -251,7 +252,7 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
           </div>
 
           {/* 關鍵特徵切換膠囊 (對應 CSV focus_feature_1 ~ 4) */}
-          <div className="flex flex-wrap items-center gap-1 bg-zinc-950/80 p-1 rounded-2xl border border-white/[0.06]">
+          <div className="flex flex-wrap items-center gap-1 bg-app-well p-1 rounded-control border border-app-border">
             {seriesList.map((s) => {
               const active = s.jointName === activeSeries?.jointName;
               const focusIdx = focusFeatures
@@ -262,16 +263,16 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
                   key={s.jointName}
                   type="button"
                   onClick={() => onSelectJoint(s.jointName)}
-                  className={`px-3 py-1 rounded-xl text-xs font-medium transition flex items-center gap-1.5 ${
+                  className={`px-3 py-1 rounded-control text-caption font-medium transition flex items-center gap-1.5 ${
                     active
-                      ? 'bg-white text-zinc-950'
-                      : 'text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-brand-primary text-white shadow-brand'
+                      : 'text-app-muted hover:text-app-primary'
                   }`}
                 >
                   {focusIdx >= 0 && (
                     <span
-                      className={`text-[10px] font-mono ${
-                        active ? 'text-zinc-700 font-semibold' : 'text-zinc-500'
+                      className={`text-caption font-mono ${
+                        active ? 'text-white/80 font-semibold' : 'text-app-muted'
                       }`}
                     >
                       F{focusIdx + 1}
@@ -285,22 +286,22 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
         </div>
 
         {/* 極簡圖例 */}
-        <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-zinc-400">
+        <div className="flex flex-wrap items-center justify-between gap-4 text-caption text-app-muted">
           <div className="flex flex-wrap items-center gap-6">
             <span className="inline-flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/25 border border-emerald-400/60 inline-block" />
               {isRelative ? '標準相對範圍 (rel)' : '標準角度範圍 (°)'}
             </span>
             <span className="inline-flex items-center gap-2">
-              <span className="w-3.5 h-0.5 bg-white inline-block" />
+              <span className="w-3.5 h-1 rounded-full bg-[#38BDF8] inline-block" />
               {isRelative ? '實測相對位置／軀幹比 (rel)' : '實測關節夾角 (°)'}
             </span>
             <span className="inline-flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
+              <span className="w-2 h-2 rounded-full bg-[#F43F5E] inline-block" />
               偏差標記
             </span>
           </div>
-          <span className="text-[11px] font-mono text-zinc-500">
+          <span className="text-caption font-mono text-app-muted">
             {isRelative
               ? '單位：相對髖中心／軀幹尺度比值 (y_rel 向下增加)'
               : '單位：關節夾角度數 (°)'}
@@ -326,4 +327,3 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
 );
 
 JointAngleChart.displayName = 'JointAngleChart';
-

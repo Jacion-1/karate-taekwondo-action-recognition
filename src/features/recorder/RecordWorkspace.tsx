@@ -352,7 +352,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                   aria-label="切換前後鏡頭"
                   onClick={toggleFacingMode}
                   disabled={isRecording}
-                  className="p-1.5 rounded-full bg-zinc-950/75 hover:bg-zinc-900 border border-white/[0.08] text-zinc-300 backdrop-blur-md disabled:opacity-40 transition"
+                  className="p-1.5 rounded-control bg-app-canvas/80 hover:bg-app-elevated border border-app-border text-app-secondary backdrop-blur-md disabled:opacity-40 transition"
                   title="切換前後鏡頭"
                 >
                   <FlipHorizontal className="w-3.5 h-3.5" />
@@ -404,7 +404,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                     type="button"
                     aria-label="關閉鏡頭"
                     onClick={stopCamera}
-                    className="px-3.5 py-2 rounded-full text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 transition"
+                    className="px-3.5 py-2 rounded-control text-caption text-app-muted hover:text-app-primary hover:bg-app-elevated transition"
                   >
                     關閉鏡頭
                   </button>
@@ -422,7 +422,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isImportingFile || isRecording || isAnalyzingInstant}
-              className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-full bg-zinc-800/80 hover:bg-zinc-800 border border-white/[0.06] text-zinc-200 text-xs font-medium transition disabled:opacity-50 touch-manipulation"
+              className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-control bg-app-elevated hover:bg-slate-700/80 border border-app-border text-app-primary text-caption font-medium transition disabled:opacity-50 touch-manipulation"
             >
               <Upload className="w-3.5 h-3.5 text-zinc-400" />
               {isImportingFile ? '匯入中...' : '匯入本地影片'}
@@ -432,7 +432,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
               type="button"
               onClick={handleGenerateSyntheticVideo}
               disabled={isGeneratingDemo || isRecording || isAnalyzingInstant}
-              className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-full bg-zinc-800/80 hover:bg-zinc-800 border border-white/[0.06] text-zinc-200 text-xs font-medium transition disabled:opacity-50 touch-manipulation"
+              className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-control bg-app-elevated hover:bg-slate-700/80 border border-app-border text-app-primary text-caption font-medium transition disabled:opacity-50 touch-manipulation"
             >
               <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
               {isGeneratingDemo ? '產生中...' : '產生範例影片'}
@@ -441,31 +441,31 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
         </div>
 
         {/* Phase 7.7: 隱私與安全同意說明 */}
-        <p className="px-2 text-[11px] text-zinc-500">
+        <p className="px-2 text-caption text-app-muted">
           影片含人體影像，將在你按下分析後才會上傳到所設定的後端。
         </p>
 
         {/* Phase 6.4: 依動作顯示建議拍攝視角提示文字，並註明單鏡頭 2D 透視變形限制 */}
-        <div className="px-4 py-3 rounded-2xl bg-zinc-900/45 border border-white/[0.06] text-xs text-zinc-400 flex flex-wrap items-center justify-between gap-2">
+        <div className="px-4 py-3 rounded-panel bg-app-well/60 border border-app-border text-caption text-app-secondary flex flex-wrap items-center justify-between gap-2">
           <div>
-            <span className="font-medium text-zinc-300">建議拍攝視角：</span>
+            <span className="font-semibold text-app-primary">建議拍攝視角：</span>
             <span>
               {recognitionMode === 'auto'
                 ? '踢擊類與直線出拳建議側面拍攝、格擋類建議斜側 45°–90° 拍攝，並保持全身完整入鏡。'
                 : ACTION_METADATA[recognitionMode].cameraViewHint}
             </span>
           </div>
-          <span className="text-[11px] font-mono text-amber-300/90 shrink-0">
+          <span className="text-caption font-mono text-status-warning/90 shrink-0">
             注意：單鏡頭 2D 角度會隨拍攝方向變形
           </span>
         </div>
 
         {/* Sensei AI 閉環教練捷徑條：拍攝/匯入後可一鍵直接識別分析 */}
         {recentSavedId && (
-          <div className="px-5 py-3.5 rounded-2xl bg-zinc-900/95 border border-white/[0.12] flex flex-wrap items-center justify-between gap-4">
+          <div className="px-5 py-3.5 rounded-card bg-app-surface border border-app-border shadow-card flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="text-xs text-zinc-200">
+              <span className="w-2 h-2 rounded-full bg-status-success" />
+              <span className="text-caption text-app-secondary">
                 動作影片已就緒，可立即比對資料庫識別動作並查看教練修正建議
               </span>
             </div>
@@ -474,7 +474,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                 type="button"
                 onClick={handleInstantAnalyzeRecent}
                 disabled={isAnalyzingInstant}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition disabled:opacity-60"
+                className="btn-primary text-caption min-h-[38px] px-4 py-1.5"
               >
                 {isAnalyzingInstant ? (
                   <>
@@ -491,7 +491,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
               <button
                 type="button"
                 onClick={onNavigateToVault}
-                className="inline-flex items-center gap-1 text-xs font-medium text-zinc-400 hover:text-white transition"
+                className="inline-flex items-center gap-1 text-caption font-medium text-app-muted hover:text-app-primary transition"
               >
                 <span>前往影片庫</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -506,10 +506,10 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
         <div className="space-y-3">
           <div className="px-1 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-white">
+              <h2 className="text-heading-md font-semibold text-app-primary">
                 識別模式與動作技術圖譜
               </h2>
-              <p className="text-xs text-zinc-500 mt-0.5">
+              <p className="text-caption text-app-muted mt-0.5">
                 預設自動比對資料庫識別動作，亦可點選圖譜檢視各動作標準角度
               </p>
             </div>
@@ -527,7 +527,8 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                   : 'bg-zinc-900/30 border-white/[0.05] hover:bg-zinc-900/60 hover:border-white/[0.1]'
               }`}
             >
-              <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="absolute left-0 top-0 bottom-0 w-1 ${displayMartialArt === '空手道' ? 'bg-discipline-karate' : 'bg-discipline-tkd'}" />
+                    <div className="flex items-center justify-between gap-2 mb-1 pl-1">
                 <div className="flex items-center gap-2.5">
                   <span
                     className={`w-2 h-2 rounded-full transition ${
@@ -540,11 +541,11 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                     AI 自動比對識別
                   </span>
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-white/[0.07] text-[10px] font-mono text-zinc-300">
+                <span className="px-2 py-0.5 rounded-badge bg-brand-primary/15 border border-brand-primary/30 text-caption font-mono text-blue-300">
                   預設推薦
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 pl-4.5 leading-relaxed">
+              <p className="text-body text-app-secondary pl-4.5 leading-relaxed">
                 透過骨架時序特徵自動比對空手道與跆拳道資料庫，判定使用者動作並給予評分與建議
               </p>
             </button>
@@ -553,7 +554,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
               <span className="text-[11px] text-zinc-500">
                 標準動作資料庫圖譜（點擊可鎖定專項）
               </span>
-              <div className="flex items-center gap-1 bg-zinc-900/80 p-0.5 rounded-full border border-white/[0.06]">
+              <div className="flex items-center gap-1 bg-app-well p-0.5 rounded-control border border-app-border">
                 {(
                   [
                     {
@@ -665,7 +666,8 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                         : 'bg-zinc-900/30 border-white/[0.05] hover:bg-zinc-900/60 hover:border-white/[0.1]'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 ${displayMartialArt === '空手道' ? 'bg-discipline-karate' : 'bg-discipline-tkd'}" />
+                    <div className="flex items-center justify-between gap-2 mb-1 pl-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
                         <span
                           className={`w-1.5 h-1.5 rounded-full transition ${
@@ -674,10 +676,10 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                               : 'bg-zinc-700 group-hover:bg-zinc-500'
                           }`}
                         />
-                        <span className="font-medium text-sm text-white shrink-0 whitespace-nowrap">
+                        <span className="font-semibold text-title-sm text-app-primary shrink-0 whitespace-nowrap">
                           {displayLabel}
                         </span>
-                        <span className="text-[11px] font-mono text-zinc-500 truncate max-w-[155px]">
+                        <span className="text-caption font-mono text-app-muted truncate max-w-[155px]">
                           {displayTerminology}
                         </span>
                       </div>
@@ -685,10 +687,10 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                         {displayMartialArt}
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-400 pl-3.5 leading-relaxed">
+                    <p className="text-body text-app-secondary pl-3.5 leading-relaxed">
                       {meta.description}
                     </p>
-                      <div className="mt-2 pl-3.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-zinc-400">
+                      <div className="mt-2 pl-3.5 flex flex-wrap items-center justify-between gap-2 text-caption font-mono text-app-muted">
                         <span>{meta.targetAngleHint}</span>
                         <span>
                           {meta.provenance.status === 'cited' && meta.provenance.citation
@@ -697,7 +699,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                         </span>
                       </div>
                       <div className="mt-2 pl-3.5 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] text-zinc-500">
+                        <span className="text-caption text-app-muted">
                           關鍵特徵 (focus_feature_1~{meta.focusFeatures.length})：
                         </span>
                         {meta.focusFeatures.map((featCode, idx) => {
@@ -706,7 +708,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                             <span
                               key={featCode}
                               title={`focus_feature_${idx + 1}: ${featCode}｜${fMeta.formula}（${fMeta.scenario}）`}
-                              className="px-2 py-0.5 rounded-md bg-zinc-950/80 border border-white/[0.06] text-[10px] font-mono text-zinc-300"
+                              className="px-2 py-0.5 rounded-badge bg-app-well border border-app-border text-caption font-mono text-app-secondary"
                             >
                               F{idx + 1} {fMeta.label} ({featCode})
                             </span>
@@ -721,17 +723,17 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
         </div>
 
         {/* 次要位置：預設收合的系統架構與 CSV 特徵座標說明 */}
-        <details className="group rounded-2xl bg-zinc-900/30 border border-white/[0.05] px-4 py-3 text-xs text-zinc-500">
-          <summary className="cursor-pointer list-none flex items-center justify-between font-medium text-zinc-400 hover:text-zinc-300 transition">
+        <details className="group rounded-panel bg-app-surface/40 border border-app-border px-4 py-3 text-caption text-app-muted">
+          <summary className="cursor-pointer list-none flex items-center justify-between font-medium text-app-secondary hover:text-app-primary transition">
             <span className="inline-flex items-center gap-2">
               <Info className="w-3.5 h-3.5 text-zinc-500" />
               21 項特徵規格、座標定義與效能防護說明
             </span>
-            <span className="text-[11px] group-open:rotate-180 transition-transform">
+            <span className="text-caption group-open:rotate-180 transition-transform">
               ▾
             </span>
           </summary>
-          <ul className="mt-3 pt-3 border-t border-white/[0.05] space-y-2 text-[11px] text-zinc-400 leading-relaxed">
+          <ul className="mt-3 pt-3 border-t border-app-subtle space-y-2 text-caption text-app-secondary leading-relaxed">
             <li>
               • <strong>左右座標定義</strong>：所有特徵之左（<code>left_*</code>）／右（<code>right_*</code>）皆為<strong>「選手自己」的左與右</strong>，非螢幕畫面左右。
             </li>

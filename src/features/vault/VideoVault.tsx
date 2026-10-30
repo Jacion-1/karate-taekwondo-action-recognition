@@ -38,23 +38,23 @@ const STATUS_DOT: Record<
 > = {
   local_saved: {
     label: '待分析',
-    dotClass: 'bg-zinc-400',
+    dotClass: 'bg-app-muted',
   },
   uploading: {
     label: '上傳中',
-    dotClass: 'bg-sky-400 animate-pulse',
+    dotClass: 'bg-brand-primary animate-pulse',
   },
   processing: {
     label: '辨識中',
-    dotClass: 'bg-amber-400 animate-pulse',
+    dotClass: 'bg-status-warning animate-pulse',
   },
   completed: {
     label: '已完成',
-    dotClass: 'bg-emerald-400',
+    dotClass: 'bg-status-success',
   },
   failed: {
     label: '失敗',
-    dotClass: 'bg-rose-400',
+    dotClass: 'bg-status-danger',
   },
 };
 
@@ -102,7 +102,7 @@ const VideoVaultItemCard: React.FC<{
     <div className="lab-card-interactive p-4 flex flex-col justify-between gap-4">
       <div>
         {/* 縮圖與預覽容器 */}
-        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#0c0c0f] border border-white/[0.05] mb-3.5 group">
+        <div className="relative w-full aspect-video rounded-panel overflow-hidden bg-app-well border border-app-border mb-3.5 group">
           {isVideoExpired ? (
             <div className="relative w-full h-full">
               {record.thumbnailDataUrl ? (
@@ -117,7 +117,7 @@ const VideoVaultItemCard: React.FC<{
                 </div>
               )}
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-2 text-center">
-                <span className="px-2.5 py-1 rounded-full bg-zinc-900/90 border border-white/10 text-[11px] font-mono text-zinc-300">
+                <span className="px-2.5 py-1 rounded-badge bg-app-surface/90 border border-app-border text-caption font-mono text-app-muted">
                   視訊已過期清理 · 數據仍保留
                 </span>
               </div>
@@ -142,7 +142,7 @@ const VideoVaultItemCard: React.FC<{
                 onClick={() => setShowPreview(true)}
                 className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition"
               >
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-zinc-950/90 border border-white/15 text-xs font-medium text-white">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-control bg-app-surface/90 border border-app-border text-caption font-medium text-app-primary shadow-card">
                   <Play className="w-3 h-3 fill-white" />
                   預覽影片
                 </span>
@@ -162,7 +162,7 @@ const VideoVaultItemCard: React.FC<{
           )}
 
           {/* 右下角極簡時長標籤 */}
-          <div className="pointer-events-none absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-zinc-950/80 font-mono text-[11px] text-zinc-300 tabular-nums">
+          <div className="pointer-events-none absolute bottom-2 right-2 px-2 py-0.5 rounded-badge bg-app-canvas/80 font-mono text-caption text-app-primary tabular-nums border border-app-border/40">
             {record.duration}s
           </div>
         </div>
@@ -172,7 +172,7 @@ const VideoVaultItemCard: React.FC<{
           <div>
             {recognizedMeta ? (
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-semibold text-white">
+                <h3 className="text-title-sm font-semibold text-app-primary">
                   {recognizedMeta.label}
                 </h3>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${recognizedMeta.martialArt === '空手道' ? 'badge-karate' : 'badge-taekwondo'}`}>
@@ -180,7 +180,7 @@ const VideoVaultItemCard: React.FC<{
                 </span>
                 {analysisSource && (
                   <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                    className={`px-1.5 py-0.5 rounded-badge text-caption font-mono ${
                       analysisSource === 'mock'
                         ? 'bg-amber-500/15 text-amber-300 border border-amber-400/30'
                         : 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/30'
@@ -190,7 +190,7 @@ const VideoVaultItemCard: React.FC<{
                   </span>
                 )}
                 {requestedMeta && (
-                  <span className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-mono text-zinc-400">
+                  <span className="px-1.5 py-0.5 rounded-badge bg-app-elevated border border-app-subtle text-caption font-mono text-app-muted">
                     鎖定：{requestedMeta.shortLabel}
                   </span>
                 )}
@@ -200,7 +200,7 @@ const VideoVaultItemCard: React.FC<{
                 <h3 className="text-sm font-semibold text-zinc-200">
                   待系統識別動作
                 </h3>
-                <span className="text-[11px] text-zinc-500">
+                <span className="text-caption text-app-muted">
                   {requestedMeta
                     ? `已鎖定專項：${requestedMeta.label}`
                     : '分析時自動比對資料庫'}
@@ -208,14 +208,14 @@ const VideoVaultItemCard: React.FC<{
               </div>
             )}
           </div>
-          <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 shrink-0">
+          <span className="inline-flex items-center gap-1.5 text-caption text-app-muted shrink-0">
             <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
             {statusInfo.label}
           </span>
         </div>
 
         {/* 精簡檔案資訊 */}
-        <div className="text-[11px] text-zinc-500 font-mono flex items-center gap-2 flex-wrap">
+        <div className="text-caption text-app-muted font-mono flex items-center gap-2 flex-wrap">
           <span>{sourceText}</span>
           <span>·</span>
           <span>{sizeMB}</span>
@@ -235,7 +235,7 @@ const VideoVaultItemCard: React.FC<{
         </div>
 
         {record.status === 'failed' && record.errorMessage && (
-          <div className="mt-2.5 p-2.5 rounded-xl bg-rose-950/30 border border-rose-500/20 text-xs text-rose-300">
+          <div className="mt-2.5 p-2.5 rounded-control bg-status-danger/15 border border-status-danger/30 text-caption text-rose-300">
             {record.errorMessage}
           </div>
         )}
@@ -243,7 +243,7 @@ const VideoVaultItemCard: React.FC<{
         {/* 上傳與分析進度條 */}
         {isBusy && (
           <div className="mt-3 space-y-1.5">
-            <div className="flex justify-between text-xs text-zinc-400">
+            <div className="flex justify-between text-caption text-app-muted">
               <span className="inline-flex items-center gap-1.5">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 {record.status === 'uploading'
@@ -254,9 +254,9 @@ const VideoVaultItemCard: React.FC<{
                 {record.uploadProgress ?? 0}%
               </span>
             </div>
-            <div className="w-full h-1 rounded-full bg-zinc-800 overflow-hidden">
+            <div className="w-full h-1 rounded-full bg-app-well overflow-hidden">
               <div
-                className="h-full bg-white transition-all duration-300"
+                className="h-full bg-brand-primary transition-all duration-300"
                 style={{ width: `${record.uploadProgress ?? 15}%` }}
               />
             </div>
@@ -265,14 +265,14 @@ const VideoVaultItemCard: React.FC<{
       </div>
 
       {/* 底部操作列 */}
-      <div className="flex items-center justify-between gap-2 pt-3 border-t border-white/[0.05]">
+      <div className="flex items-center justify-between gap-2 pt-3 border-t border-app-subtle">
         {isVideoExpired ? (
-          <span className="text-xs text-zinc-600 font-mono">視訊已過期清理</span>
+          <span className="text-caption text-app-muted font-mono">視訊已過期清理</span>
         ) : (
           <button
             type="button"
             onClick={() => setShowPreview((prev) => !prev)}
-            className="text-xs text-zinc-400 hover:text-white transition"
+            className="text-caption text-app-muted hover:text-app-primary transition"
           >
             {showPreview ? '關閉預覽' : '播放原片'}
           </button>
@@ -283,7 +283,7 @@ const VideoVaultItemCard: React.FC<{
             <button
               type="button"
               onClick={() => onOpenAnalysis(record.id, record.analysisId!)}
-              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition"
+              className="btn-primary text-caption py-1.5 px-3.5"
             >
               <span>查看報告</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -293,7 +293,7 @@ const VideoVaultItemCard: React.FC<{
               type="button"
               disabled={isBusy || !canAnalyze}
               onClick={() => onUploadAndAnalyze(record)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-zinc-100 hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 font-medium text-xs transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-control bg-brand-primary hover:bg-brand-hover disabled:bg-app-elevated disabled:text-app-muted text-white font-medium text-caption shadow-brand transition"
             >
               {record.status === 'failed' ? (
                 <>
@@ -312,7 +312,7 @@ const VideoVaultItemCard: React.FC<{
             type="button"
             disabled={isBusy}
             onClick={() => onDelete(record.id)}
-            className="p-1.5 rounded-full text-zinc-500 hover:text-rose-400 hover:bg-zinc-800/60 transition disabled:opacity-40"
+            className="p-1.5 rounded-control text-app-muted hover:text-status-danger hover:bg-app-elevated transition disabled:opacity-40"
             title="刪除紀錄"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -547,15 +547,15 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
       />
 
       {/* 極簡標題與操作列 */}
-      <div className="flex flex-wrap items-end justify-between gap-4 pb-6 border-b border-white/[0.06]">
+      <div className="flex flex-wrap items-end justify-between gap-4 pb-6 border-b border-app-subtle">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-white leading-snug">
+            <h2 className="text-heading-lg font-bold text-app-primary leading-snug">
               動作影片庫
             </h2>
             {storageEstimate && (
               <span
-                className="px-2.5 py-0.5 rounded-full bg-zinc-900 border border-white/[0.07] text-[11px] font-mono text-zinc-400"
+                className="px-2.5 py-0.5 rounded-badge bg-app-surface border border-app-border text-caption font-mono text-app-muted"
                 title="瀏覽器 IndexedDB 本機儲存空間用量 (navigator.storage.estimate)"
               >
                 本機儲存：{(storageEstimate.usageBytes / (1024 * 1024)).toFixed(1)} MB
@@ -568,7 +568,7 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
               </span>
             )}
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-body text-app-muted mt-1">
             管理待識別與已完成分析的影片，由系統比對空手道／跆拳道資料庫自動識別動作並評分
           </p>
         </div>
@@ -579,7 +579,7 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
               type="button"
               disabled={!canAnalyze || isBatchAnalyzing}
               onClick={handleBatchUploadAllPending}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 font-medium text-xs transition"
+              className="btn-primary text-caption"
             >
               {isBatchAnalyzing && batchProgress ? (
                 <>
@@ -598,7 +598,7 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
             type="button"
             disabled={isCreatingDemo || isBatchAnalyzing}
             onClick={handleQuickCreateAndAnalyze}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-zinc-200 font-medium text-xs transition disabled:opacity-50"
+            className="btn-secondary text-caption disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
             {isCreatingDemo ? '產生並識別動作中...' : '快速產生範例並查看報告'}
@@ -664,15 +664,15 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
       {/* 影片卡片網格 */}
       {!videos || videos.length === 0 ? (
         <div className="lab-card p-16 text-center space-y-3">
-          <h3 className="text-sm font-medium text-zinc-200">
+          <h3 className="text-title-sm font-semibold text-app-primary">
             尚無儲存的動作影片
           </h3>
-          <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+          <p className="text-body text-app-muted max-w-sm mx-auto">
             前往「拍攝與輸入」錄製或匯入影片，或點擊右上角「快速產生範例並查看報告」。
           </p>
         </div>
       ) : filteredVideos.length === 0 ? (
-        <div className="lab-card p-12 text-center text-xs text-zinc-500">
+        <div className="lab-card p-12 text-center text-body text-app-muted">
           沒有符合篩選條件的影片紀錄。
         </div>
       ) : (

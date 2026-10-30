@@ -399,7 +399,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
   if (loadState === 'loading') {
     return (
-      <div className="lab-card p-16 text-center text-xs text-zinc-500">
+      <div className="lab-card p-16 text-center text-caption text-app-muted">
         載入分析報告中...
       </div>
     );
@@ -408,17 +408,17 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   if (loadState === 'not_found') {
     return (
       <div className="lab-card p-16 text-center space-y-4">
-        <div className="text-sm font-medium text-zinc-200">
+        <div className="text-title-sm font-semibold text-app-primary">
           找不到對應的動作影片或分析報告
         </div>
-        <p className="text-xs text-zinc-500 max-w-md mx-auto">
+        <p className="text-caption text-app-muted max-w-md mx-auto">
           該筆紀錄可能已被刪除，或尚未完成分析。請返回影片庫重新選擇影片。
         </p>
         <div>
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-medium transition"
+            className="btn-primary text-caption"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             返回影片庫
@@ -431,7 +431,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   if (loadState === 'error' || !analysis || !subMetrics) {
     return (
       <div className="lab-card p-16 text-center space-y-4">
-        <div className="text-sm font-medium text-rose-300">
+        <div className="text-title-sm font-semibold text-status-danger">
           讀取分析報告失敗
         </div>
         <p className="text-xs text-zinc-400 max-w-md mx-auto">
@@ -441,7 +441,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           <button
             type="button"
             onClick={() => setReloadTrigger((n) => n + 1)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-medium transition"
+            className="btn-primary text-caption"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             重試讀取
@@ -449,7 +449,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-zinc-300 text-xs font-medium transition"
+            className="btn-secondary text-caption"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             返回影片庫
@@ -473,9 +473,9 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         <div
           role="region"
           aria-label="訪客模式儲存提示"
-          className="bg-zinc-900/90 border border-slate-700/50 rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs"
+          className="bg-app-surface border border-app-border rounded-panel px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-caption"
         >
-          <div className="flex items-center gap-2 text-zinc-300">
+          <div className="flex items-center gap-2 text-app-secondary">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
             <span>
               訪客模式 — 本次分析數據與視訊僅暫存於當前頁面記憶體，重新整理或切換回首頁後將自動銷毀。
@@ -485,7 +485,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             type="button"
             disabled={isPromoting}
             onClick={handlePromoteToMember}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium transition text-xs shrink-0 disabled:opacity-50"
+            className="btn-primary text-caption py-1.5 px-3.5 disabled:opacity-50"
           >
             <User className="w-3.5 h-3.5 text-zinc-800" />
             <span>登入以永久保存歷史</span>
@@ -496,13 +496,13 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
       {analysis.source === 'mock' && (
         <div
           role="note"
-          className="sticky top-16 z-20 px-4 py-2.5 rounded-2xl mock-banner-prominent backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-xs"
+          className="sticky top-16 z-20 px-4 py-2.5 rounded-panel mock-banner-prominent backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-caption"
         >
           <div className="flex items-center gap-2 font-medium">
             <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
             <span>模擬資料（非真實辨識結果）</span>
           </div>
-          <span className="text-[11px] text-amber-200/80">
+          <span className="text-caption text-amber-200/80">
             此報告由前端內建模擬引擎產生，僅供介面與流程展示；如需實機推論請於右上角切換至 REST API 後端。
           </span>
         </div>
@@ -514,28 +514,28 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-2 text-xs font-medium text-zinc-400 hover:text-white transition"
+            className="inline-flex items-center gap-2 text-caption font-medium text-app-muted hover:text-app-primary transition"
           >
             <ArrowLeft className="w-4 h-4" />
             返回影片庫
           </button>
-          <span className="text-zinc-700">|</span>
+          <span className="text-app-border">|</span>
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-[11px] font-medium text-zinc-200">
+            <span className="px-2.5 py-0.5 rounded-badge bg-app-surface border border-app-border text-caption font-medium text-app-primary">
               系統識別結果
             </span>
             <span className="text-sm font-semibold text-white">
               {actionMeta.label}
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${actionMeta.martialArt === '空手道' ? 'badge-karate' : 'badge-taekwondo'}`}>
+            <span className={`px-2 py-0.5 rounded-badge text-caption font-medium ${actionMeta.martialArt === '空手道' ? 'badge-karate' : 'badge-taekwondo'}`}>
               {actionMeta.martialArt}
             </span>
             {analysis.confidence !== undefined && (
-              <span className="text-xs font-mono text-emerald-400">
+              <span className="text-caption font-mono text-status-success">
                 信心度 {analysis.confidence}%
               </span>
             )}
-            <span className="provenance-tag px-2 py-0.5 rounded-full text-[10px]">
+            <span className="provenance-tag px-2 py-0.5 rounded-badge text-caption">
               {actionMeta.provenance.status === 'cited' && actionMeta.provenance.citation
                 ? `標準來源：${actionMeta.provenance.citation}`
                 : '初始經驗閾值，待驗證'}
@@ -548,7 +548,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             <button
               type="button"
               onClick={() => onReverifyAction(analysis.actionType)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[38px] rounded-full bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-medium transition touch-manipulation"
+              className="btn-primary text-caption"
             >
               <Video className="w-3.5 h-3.5" />
               再次拍攝驗證
@@ -558,7 +558,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           <button
             type="button"
             onClick={handleExportJson}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-zinc-200 text-xs font-medium transition touch-manipulation"
+            className="btn-secondary text-caption"
           >
             <Download className="w-3.5 h-3.5 text-zinc-400" />
             匯出 JSON
@@ -567,20 +567,20 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
       </div>
 
       {/* JAB AI 回合式極簡數據指標列 (Minimalist Metric Strip) — 穩定度與爆發力僅在後端提供 metrics 時顯示 */}
-      <div className="lab-card p-5 sm:p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-flow-col lg:auto-cols-fr gap-4 sm:gap-6 border border-white/[0.08]">
-        <div className="col-span-2 sm:col-span-1 pb-4 sm:pb-0 border-b sm:border-b-0 border-white/[0.06] space-y-1">
-          <div className="text-xs text-zinc-500">資料庫比對識別動作</div>
+      <div className="lab-card p-5 sm:p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-flow-col lg:auto-cols-fr gap-4 sm:gap-6">
+        <div className="col-span-2 sm:col-span-1 pb-4 sm:pb-0 border-b sm:border-b-0 border-app-subtle space-y-1">
+          <div className="text-caption text-app-muted">資料庫比對識別動作</div>
           <div className="mt-1.5 flex items-baseline gap-2">
             <span className="text-xl font-semibold text-white whitespace-nowrap">
               {actionMeta.label}
             </span>
             {analysis.confidence !== undefined && (
-              <span className="text-xs font-mono text-emerald-400 tabular-nums">
+              <span className="text-caption font-mono text-status-success tabular-nums">
                 {analysis.confidence}%
               </span>
             )}
           </div>
-          <div className="text-[11px] text-zinc-500 mt-0.5">
+          <div className="text-caption text-app-muted mt-0.5">
             {actionMeta.martialArt}標準模型 ·{' '}
             {actionMeta.provenance.status === 'cited' && actionMeta.provenance.citation
               ? actionMeta.provenance.citation
@@ -589,28 +589,28 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         </div>
 
         <div className="space-y-1">
-          <div className="text-xs text-zinc-500">動作評分與等級</div>
+          <div className="text-caption text-app-muted">動作評分與等級</div>
           <div className="mt-1.5 flex items-baseline gap-2.5">
             <span className="text-3xl font-semibold font-mono text-white tabular-nums">
               {analysis.totalScore}
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-white/10 text-xs font-mono font-medium text-white">
+            <span className="px-2 py-0.5 rounded-badge bg-brand-primary/15 border border-brand-primary/30 text-caption font-mono font-medium text-blue-300">
               Grade {analysis.grade}
             </span>
           </div>
         </div>
 
         <div className="space-y-1">
-          <div className="text-xs text-zinc-500">標準角度達成率</div>
-          <div className="mt-1.5 text-2xl font-semibold font-mono text-emerald-400 tabular-nums">
+          <div className="text-caption text-app-muted">標準角度達成率</div>
+          <div className="mt-1.5 text-metric-lg font-bold font-mono text-status-success tabular-nums">
             {subMetrics.complianceRate}%
           </div>
         </div>
 
         {subMetrics.stabilityScore !== undefined && (
           <div className="space-y-1">
-            <div className="text-xs text-zinc-500">核心軸線穩定度</div>
-            <div className="mt-1.5 text-2xl font-semibold font-mono text-zinc-100 tabular-nums">
+            <div className="text-caption text-app-muted">核心軸線穩定度</div>
+            <div className="mt-1.5 text-metric-lg font-bold font-mono text-app-primary tabular-nums">
               {subMetrics.stabilityScore}
             </div>
           </div>
@@ -618,16 +618,16 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
         {subMetrics.explosivenessScore !== undefined && (
           <div className="space-y-1">
-            <div className="text-xs text-zinc-500">動作爆發力</div>
-            <div className="mt-1.5 text-2xl font-semibold font-mono text-zinc-100 tabular-nums">
+            <div className="text-caption text-app-muted">動作爆發力</div>
+            <div className="mt-1.5 text-metric-lg font-bold font-mono text-app-primary tabular-nums">
               {subMetrics.explosivenessScore}
             </div>
           </div>
         )}
 
         <div className="space-y-1">
-          <div className="text-xs text-zinc-500">最大角度偏差</div>
-          <div className="mt-1.5 text-2xl font-semibold font-mono text-rose-400 tabular-nums">
+          <div className="text-caption text-app-muted">最大角度偏差</div>
+          <div className="mt-1.5 text-metric-lg font-bold font-mono text-status-danger tabular-nums">
             {subMetrics.peakDeviationDeg}°
           </div>
         </div>
@@ -638,16 +638,16 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         {/* 左欄 (5 cols)：Kinovea 慢動作角度疊加檢視器 + JAB AI 教練講評與亮點 */}
         <div className="lg:col-span-5 space-y-6">
           <div className="lab-card overflow-hidden">
-            <div className="relative aspect-video bg-[#0c0c0f] flex items-center justify-center p-6 text-center">
+            <div className="relative aspect-video bg-app-well flex items-center justify-center p-6 text-center">
               {isVideoExpired ? (
                 <div className="space-y-3 max-w-sm">
-                  <div className="inline-flex p-3 rounded-full bg-zinc-900 border border-white/[0.06] text-zinc-400">
+                  <div className="inline-flex p-3 rounded-panel bg-app-surface border border-app-border text-app-muted">
                     <FileVideo className="w-6 h-6" />
                   </div>
-                  <div className="text-sm font-semibold text-zinc-200">
+                  <div className="text-title-sm font-semibold text-app-primary">
                     視訊保存期限已過（數據仍保留）
                   </div>
-                  <p className="text-xs text-zinc-500 leading-relaxed">
+                  <p className="text-caption text-app-muted leading-relaxed">
                     原始訓練視訊已超過 7 天保存期限並自動清理以釋放本機空間；該筆紀錄之結構化數據評分、關節角度時序與教練修正建議仍完整保留。
                   </p>
                 </div>
@@ -663,7 +663,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="text-xs text-zinc-500">載入影片中...</div>
+                <div className="text-caption text-app-muted">載入影片中...</div>
               )}
 
               {/* 左上角：Kinovea 視覺量角器疊加開關 — 僅在未過期且有 frames 時顯示 */}
@@ -675,7 +675,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   className={`absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium backdrop-blur-md transition ${
                     showKinoveaOverlay
                       ? 'bg-zinc-950/85 border-white/20 text-zinc-100'
-                      : 'bg-zinc-950/60 border-white/[0.06] text-zinc-500'
+                      : 'bg-zinc-950/60 border-app-subtle text-zinc-500'
                   }`}
                 >
                   <Eye className="w-3 h-3" />
@@ -701,21 +701,21 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
               {/* 左下角：Kinovea 即時關鍵特徵與偏差狀態 HUD（僅在未過期時） */}
               {!isVideoExpired && currentPointHud && (
-                <div className="pointer-events-none absolute bottom-3 left-3 z-10 px-3 py-1.5 rounded-xl bg-zinc-950/85 border border-white/[0.08] backdrop-blur-md font-mono text-xs flex items-center gap-2">
-                  <span className="text-zinc-300">
+                <div className="pointer-events-none absolute bottom-3 left-3 z-10 px-3 py-1.5 rounded-control bg-app-canvas/85 border border-app-border backdrop-blur-md font-mono text-caption flex items-center gap-2">
+                  <span className="text-app-secondary">
                     {currentPointHud.jointLabel}
                   </span>
                   <span
                     className={`font-semibold tabular-nums ${
                       currentPointHud.isCompliant
-                        ? 'text-emerald-400'
+                        ? 'text-status-success'
                         : 'text-rose-400'
                     }`}
                   >
                     {currentPointHud.actualAngle}
                     {currentPointHud.unitSuffix}
                   </span>
-                  <span className="text-[11px] text-zinc-500 tabular-nums">
+                  <span className="text-caption text-app-muted tabular-nums">
                     標準 {currentPointHud.standardMin}–{currentPointHud.standardMax}
                     {currentPointHud.unitSuffix}
                     {!currentPointHud.isCompliant &&
@@ -726,7 +726,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
               {/* 右上角時間點（僅在未過期時） */}
               {!isVideoExpired && (
-                <div className="pointer-events-none absolute top-3 right-3 z-10 px-2.5 py-1 rounded-md bg-zinc-950/80 font-mono text-[11px] text-zinc-300 tabular-nums">
+                <div className="pointer-events-none absolute top-3 right-3 z-10 px-2.5 py-1 rounded-badge bg-app-canvas/80 font-mono text-caption text-app-secondary tabular-nums border border-app-border/40">
                   {currentTime.toFixed(2)}s
                   {displayDuration > 0 ? ` / ${displayDuration.toFixed(1)}s` : ''}
                 </div>
@@ -735,7 +735,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
             {/* CSV 分段與關鍵時間點快速定位列 (start_time_s / completion_time_s / end_time_s) */}
             {!isVideoExpired && keyframes && (
-              <div className="px-4 py-2.5 bg-zinc-950/50 border-t border-white/[0.05] flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="px-4 py-2.5 bg-app-well/50 border-t border-app-subtle flex flex-wrap items-center justify-between gap-2 text-caption">
                 <span className="text-[11px] text-zinc-500">
                   動作時間定位 (start / completion / end)
                 </span>
@@ -776,13 +776,13 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
             {/* 乾淨的播放與慢動作控制列（影片過期時隱藏） */}
             {!isVideoExpired && (
-            <div className="p-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.05]">
+            <div className="p-4 flex flex-wrap items-center justify-between gap-2 border-t border-app-subtle">
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   aria-label={isPlaying ? '暫停影片' : '播放影片'}
                   onClick={handleTogglePlay}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition touch-manipulation"
+                  className="btn-primary text-caption min-h-[40px] px-4 py-2"
                 >
                   {isPlaying ? (
                     <>
@@ -801,7 +801,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   type="button"
                   aria-label="上一幀"
                   onClick={() => handleStepFrame(-1)}
-                  className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-full hover:bg-zinc-800 text-zinc-300 transition touch-manipulation"
+                  className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-control hover:bg-app-elevated text-app-secondary hover:text-app-primary transition touch-manipulation"
                   title={`上一幀 (-${frameStepSeconds.toFixed(3)}s @ ${effectiveFps}fps, ←)`}
                 >
                   <StepBack className="w-4 h-4" />
@@ -810,7 +810,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   type="button"
                   aria-label="下一幀"
                   onClick={() => handleStepFrame(1)}
-                  className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-full hover:bg-zinc-800 text-zinc-300 transition touch-manipulation"
+                  className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-control hover:bg-app-elevated text-app-secondary hover:text-app-primary transition touch-manipulation"
                   title={`下一幀 (+${frameStepSeconds.toFixed(3)}s @ ${effectiveFps}fps, →)`}
                 >
                   <StepForward className="w-4 h-4" />
@@ -819,7 +819,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   type="button"
                   aria-label="重頭開始播放"
                   onClick={() => handleSeekToTime(0)}
-                  className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition touch-manipulation"
+                  className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-control hover:bg-app-elevated text-app-muted hover:text-app-primary transition touch-manipulation"
                   title="重頭開始"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -827,7 +827,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
               </div>
 
               {/* 倍速切換 */}
-              <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-full border border-white/[0.06]">
+              <div className="flex items-center gap-1 bg-app-well p-1 rounded-control border border-app-border">
                 {[0.25, 0.5, 1].map((rate) => (
                   <button
                     key={rate}
@@ -853,10 +853,10 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             <div className="lab-card p-6 space-y-4">
               {analysis.feedbackSummary && (
                 <div className="space-y-2">
-                  <h3 className="text-xs font-medium text-zinc-400">
+                  <h3 className="text-caption font-medium text-app-muted">
                     教練評估總結
                   </h3>
-                  <p className="text-sm text-zinc-200 leading-relaxed">
+                  <p className="text-body text-app-secondary leading-relaxed">
                     {analysis.feedbackSummary}
                   </p>
                 </div>
@@ -866,20 +866,20 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 <div
                   className={`${
                     analysis.feedbackSummary
-                      ? 'pt-4 border-t border-white/[0.06]'
+                      ? 'pt-4 border-t border-app-subtle'
                       : ''
                   } space-y-2`}
                 >
-                  <div className="text-xs font-medium text-zinc-400">
+                  <div className="text-caption font-medium text-app-muted">
                     動作表現亮點
                   </div>
                   <ul className="space-y-1.5">
                     {analysis.strengths.map((str, idx) => (
                       <li
                         key={idx}
-                        className="flex items-start gap-2 text-xs text-zinc-300 leading-relaxed"
+                        className="flex items-start gap-2 text-body text-app-secondary leading-relaxed"
                       >
-                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <Check className="w-3.5 h-3.5 text-status-success shrink-0 mt-0.5" />
                         <span>{str}</span>
                       </li>
                     ))}
