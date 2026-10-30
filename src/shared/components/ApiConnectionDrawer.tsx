@@ -130,7 +130,7 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-[#0c0c0f] border-l border-white/[0.08] h-full flex flex-col justify-between overflow-y-auto">
+      <div className="w-full max-w-lg bg-[#0e1017] border-l border-white/[0.1] h-full flex flex-col justify-between overflow-y-auto">
         <div className="p-6 sm:p-8 space-y-8">
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
@@ -162,7 +162,7 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
                 onClick={() => handleSave('mock')}
                 className={`p-4 rounded-2xl border text-left transition ${
                   config.mode === 'mock'
-                    ? 'bg-zinc-800/90 border-white/30 text-white'
+                    ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
                     : 'bg-zinc-900/40 border-white/[0.06] text-zinc-400 hover:border-white/15'
                 }`}
               >
@@ -177,7 +177,7 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
                 onClick={() => handleSave('http')}
                 className={`p-4 rounded-2xl border text-left transition ${
                   config.mode === 'http'
-                    ? 'bg-zinc-800/90 border-white/30 text-white'
+                    ? 'bg-cyan-950/30 border-cyan-500/40 text-cyan-200'
                     : 'bg-zinc-900/40 border-white/[0.06] text-zinc-400 hover:border-white/15'
                 }`}
               >

@@ -681,14 +681,14 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                           {displayTerminology}
                         </span>
                       </div>
-                      <span className="text-[11px] text-zinc-400 shrink-0">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${displayMartialArt === '空手道' ? 'badge-karate' : 'badge-taekwondo'}`}>
                         {displayMartialArt}
                       </span>
                     </div>
                     <p className="text-xs text-zinc-400 pl-3.5 leading-relaxed">
                       {meta.description}
                     </p>
-                      <div className="mt-2 pl-3.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-zinc-500">
+                      <div className="mt-2 pl-3.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-zinc-400">
                         <span>{meta.targetAngleHint}</span>
                         <span>
                           {meta.provenance.status === 'cited' && meta.provenance.citation

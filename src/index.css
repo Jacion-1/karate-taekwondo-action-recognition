@@ -6,11 +6,54 @@
   :root {
     --font-sans: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', 'Heiti TC', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* 運動生物力學實驗室深色基調 (Biomechanics Lab Surfaces) */
+    --canvas-bg: #090a0f;
+    --surface-card: #11131a;
+    --surface-elevated: #171a24;
+    --surface-inset: #0c0d13;
+    --border-hairline: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --border-interactive: rgba(255, 255, 255, 0.24);
+
+    /* 武術流派識別色彩 (Martial Arts Discipline Identity) */
+    --karate-accent: #f43f5e;
+    --karate-surface: rgba(244, 63, 94, 0.12);
+    --karate-border: rgba(244, 63, 94, 0.32);
+
+    --tkd-accent: #06b6d4;
+    --tkd-surface: rgba(6, 182, 212, 0.12);
+    --tkd-border: rgba(6, 182, 212, 0.32);
+
+    /* 生物力學判讀狀態色彩 (Biomechanics Evaluation Semantics) */
+    --status-compliant: #10b981;
+    --status-compliant-text: #34d399;
+    --status-compliant-bg: rgba(16, 185, 129, 0.12);
+    --status-compliant-border: rgba(16, 185, 129, 0.32);
+
+    --status-warning: #f59e0b;
+    --status-warning-text: #fbbf24;
+    --status-warning-bg: rgba(245, 158, 11, 0.12);
+    --status-warning-border: rgba(245, 158, 11, 0.32);
+
+    --status-critical: #f43f5e;
+    --status-critical-text: #fb7185;
+    --status-critical-bg: rgba(244, 63, 94, 0.14);
+    --status-critical-border: rgba(244, 63, 94, 0.36);
+
+    /* 科學誠信標記色彩 (Provenance & Mock Data Indicators) */
+    --banner-mock-bg: rgba(245, 158, 11, 0.14);
+    --banner-mock-border: rgba(245, 158, 11, 0.45);
+    --banner-mock-text: #fef3c7;
+
+    --badge-provenance-bg: rgba(255, 255, 255, 0.06);
+    --badge-provenance-border: rgba(255, 255, 255, 0.12);
+    --badge-provenance-text: #a1a1aa;
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #09090b;
+    background-color: var(--canvas-bg);
     color: #f4f4f5;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -38,13 +81,74 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Modern Minimalism 卡片表面：極細微邊框、柔和深色中性底、幾乎無重陰影 */
+  /* 運動生物力學表面階層 */
   .lab-card {
-    @apply bg-zinc-900/50 border border-white/[0.06] rounded-2xl;
+    background-color: var(--surface-card);
+    border: 1px solid var(--border-hairline);
+    border-radius: 1rem;
+  }
+
+  .lab-card-elevated {
+    background-color: var(--surface-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: 1rem;
   }
 
   .lab-card-interactive {
-    @apply bg-zinc-900/50 border border-white/[0.06] rounded-2xl transition-colors duration-200 hover:bg-zinc-900/80 hover:border-white/[0.12];
+    background-color: var(--surface-card);
+    border: 1px solid var(--border-hairline);
+    border-radius: 1rem;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+  }
+  .lab-card-interactive:hover {
+    background-color: var(--surface-elevated);
+    border-color: var(--border-interactive);
+  }
+
+  /* 流派徽章樣式 */
+  .badge-karate {
+    color: var(--karate-accent);
+    background-color: var(--karate-surface);
+    border: 1px solid var(--karate-border);
+  }
+
+  .badge-taekwondo {
+    color: var(--tkd-accent);
+    background-color: var(--tkd-surface);
+    border: 1px solid var(--tkd-border);
+  }
+
+  /* 生物力學判讀狀態徽章與高亮 */
+  .status-badge-compliant {
+    color: var(--status-compliant-text);
+    background-color: var(--status-compliant-bg);
+    border: 1px solid var(--status-compliant-border);
+  }
+
+  .status-badge-warning {
+    color: var(--status-warning-text);
+    background-color: var(--status-warning-bg);
+    border: 1px solid var(--status-warning-border);
+  }
+
+  .status-badge-critical {
+    color: var(--status-critical-text);
+    background-color: var(--status-critical-bg);
+    border: 1px solid var(--status-critical-border);
+  }
+
+  /* 模擬資料醒目標記 */
+  .mock-banner-prominent {
+    background-color: var(--banner-mock-bg);
+    border: 1px solid var(--banner-mock-border);
+    color: var(--banner-mock-text);
+  }
+
+  /* 初始經驗閾值標記 */
+  .provenance-tag {
+    background-color: var(--badge-provenance-bg);
+    border: 1px solid var(--badge-provenance-border);
+    color: var(--badge-provenance-text);
   }
 }
 
@@ -53,12 +157,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: #090a0f;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: #232634;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: #363a4f;
 }

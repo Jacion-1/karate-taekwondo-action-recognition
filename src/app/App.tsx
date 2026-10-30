@@ -138,13 +138,13 @@ export const App: React.FC = () => {
 
   return (
     <ToastProvider>
-      <div className="min-h-screen flex flex-col bg-[#09090b] text-zinc-100">
+      <div className="min-h-screen flex flex-col bg-[#090a0f] text-zinc-100">
         {/* 極簡頂部導覽列：支援 390px 窄螢幕防擠壓排版 */}
-        <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#09090b]/85 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-[#090a0f]/90 backdrop-blur-xl">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 min-h-16 py-2.5 flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
             {/* 左側：專題名稱 */}
             <div className="flex items-center gap-3 whitespace-nowrap shrink-0">
-              <div className="w-2 h-2 rounded-full bg-white" />
+              <div className="w-2 h-2 rounded-full bg-gradient-to-tr from-rose-500 to-cyan-400" />
               <span className="text-sm sm:text-base font-semibold text-white whitespace-nowrap">
                 空手道與跆拳道動作識別系統
               </span>

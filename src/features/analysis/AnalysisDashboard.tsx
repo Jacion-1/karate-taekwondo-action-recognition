@@ -496,7 +496,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
       {analysis.source === 'mock' && (
         <div
           role="note"
-          className="sticky top-16 z-20 px-4 py-2.5 rounded-2xl bg-amber-500/15 border border-amber-400/35 backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-xs text-amber-200"
+          className="sticky top-16 z-20 px-4 py-2.5 rounded-2xl mock-banner-prominent backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-xs"
         >
           <div className="flex items-center gap-2 font-medium">
             <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
@@ -527,7 +527,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             <span className="text-sm font-semibold text-white">
               {actionMeta.label}
             </span>
-            <span className="text-xs text-zinc-400">
+            <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${actionMeta.martialArt === '空手道' ? 'badge-karate' : 'badge-taekwondo'}`}>
               {actionMeta.martialArt}
             </span>
             {analysis.confidence !== undefined && (
@@ -535,7 +535,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                 信心度 {analysis.confidence}%
               </span>
             )}
-            <span className="px-2 py-0.5 rounded-full bg-zinc-900 border border-white/[0.08] text-[10px] text-zinc-400">
+            <span className="provenance-tag px-2 py-0.5 rounded-full text-[10px]">
               {actionMeta.provenance.status === 'cited' && actionMeta.provenance.citation
                 ? `標準來源：${actionMeta.provenance.citation}`
                 : '初始經驗閾值，待驗證'}

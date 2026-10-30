@@ -175,7 +175,7 @@ const VideoVaultItemCard: React.FC<{
                 <h3 className="text-sm font-semibold text-white">
                   {recognizedMeta.label}
                 </h3>
-                <span className="text-xs text-zinc-500">
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${recognizedMeta.martialArt === '空手道' ? 'badge-karate' : 'badge-taekwondo'}`}>
                   {recognizedMeta.martialArt}
                 </span>
                 {analysisSource && (
