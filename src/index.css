@@ -7,37 +7,64 @@
     --font-sans: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', 'Heiti TC', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    /* 運動生物力學實驗室深色基調 (Biomechanics Lab Surfaces) */
-    --canvas-bg: #090a0f;
-    --surface-card: #11131a;
-    --surface-elevated: #171a24;
-    --surface-inset: #0c0d13;
-    --border-hairline: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
-    --border-interactive: rgba(255, 255, 255, 0.24);
+    /* 全站畫布、表面與邊框 Token (Dark Default - Slate-Navy Palette) */
+    --bg-canvas: #0D131D;
+    --bg-header: rgba(13, 19, 29, 0.88);
+    --bg-surface: #151E2D;
+    --bg-elevated: #1D293D;
+    --bg-well: #090E16;
+    --border-subtle: #1E2B3E;
+    --border-default: #26354D;
+    --border-strong: #3B82F6;
 
-    /* 武術流派識別色彩 (Martial Arts Discipline Identity) */
-    --karate-accent: #f43f5e;
-    --karate-surface: rgba(244, 63, 94, 0.12);
-    --karate-border: rgba(244, 63, 94, 0.32);
+    /* 文字階層 Token */
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
 
-    --tkd-accent: #06b6d4;
-    --tkd-surface: rgba(6, 182, 212, 0.12);
-    --tkd-border: rgba(6, 182, 212, 0.32);
+    /* 品牌與強調色 Token */
+    --brand-primary: #2563EB;
+    --brand-primary-hover: #3B82F6;
+    --brand-accent: #F97316;
 
-    /* 生物力學判讀狀態色彩 (Biomechanics Evaluation Semantics) */
+    /* 武術流派識別 Token */
+    --discipline-karate: #FB7185;
+    --discipline-tkd: #22D3EE;
+
+    /* 狀態色彩 Token */
+    --status-success: #34D399;
+    --status-warning: #FBBF24;
+    --status-danger: #FB7185;
+
+    /* 運動生物力學實驗室深色基調相容變數 */
+    --canvas-bg: var(--bg-canvas);
+    --surface-card: var(--bg-surface);
+    --surface-elevated: var(--bg-elevated);
+    --surface-inset: var(--bg-well);
+    --border-hairline: var(--border-subtle);
+    --border-interactive: var(--border-strong);
+
+    /* 武術流派識別色彩 */
+    --karate-accent: var(--discipline-karate);
+    --karate-surface: rgba(251, 113, 133, 0.12);
+    --karate-border: rgba(251, 113, 133, 0.32);
+
+    --tkd-accent: var(--discipline-tkd);
+    --tkd-surface: rgba(34, 211, 238, 0.12);
+    --tkd-border: rgba(34, 211, 238, 0.32);
+
+    /* 生物力學判讀狀態色彩 */
     --status-compliant: #10b981;
-    --status-compliant-text: #34d399;
+    --status-compliant-text: var(--status-success);
     --status-compliant-bg: rgba(16, 185, 129, 0.12);
     --status-compliant-border: rgba(16, 185, 129, 0.32);
 
-    --status-warning: #f59e0b;
-    --status-warning-text: #fbbf24;
+    --status-warning-text: var(--status-warning);
     --status-warning-bg: rgba(245, 158, 11, 0.12);
     --status-warning-border: rgba(245, 158, 11, 0.32);
 
     --status-critical: #f43f5e;
-    --status-critical-text: #fb7185;
+    --status-critical-text: var(--status-danger);
     --status-critical-bg: rgba(244, 63, 94, 0.14);
     --status-critical-border: rgba(244, 63, 94, 0.36);
 
@@ -51,10 +78,74 @@
     --badge-provenance-text: #a1a1aa;
   }
 
+  [data-theme="light"] {
+    /* 全站畫布、表面與邊框 Token (Light Mode) */
+    --bg-canvas: #F4F7FB;
+    --bg-header: rgba(255, 255, 255, 0.90);
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #EEF2F8;
+    --bg-well: #E2E8F0;
+    --border-subtle: #E2E8F0;
+    --border-default: #CBD5E1;
+    --border-strong: #2563EB;
+
+    --text-primary: #0F172A;
+    --text-secondary: #334155;
+    --text-muted: #64748B;
+
+    --brand-primary: #1D4ED8;
+    --brand-primary-hover: #2563EB;
+    --brand-accent: #EA580C;
+
+    --discipline-karate: #E11D48;
+    --discipline-tkd: #0891B2;
+
+    --status-success: #059669;
+    --status-warning: #D97706;
+    --status-danger: #E11D48;
+
+    --canvas-bg: var(--bg-canvas);
+    --surface-card: var(--bg-surface);
+    --surface-elevated: var(--bg-elevated);
+    --surface-inset: var(--bg-well);
+    --border-hairline: var(--border-subtle);
+    --border-interactive: var(--border-strong);
+
+    --karate-accent: var(--discipline-karate);
+    --karate-surface: rgba(225, 29, 72, 0.08);
+    --karate-border: rgba(225, 29, 72, 0.25);
+
+    --tkd-accent: var(--discipline-tkd);
+    --tkd-surface: rgba(8, 145, 178, 0.08);
+    --tkd-border: rgba(8, 145, 178, 0.25);
+
+    --status-compliant: #059669;
+    --status-compliant-text: var(--status-success);
+    --status-compliant-bg: rgba(5, 150, 105, 0.08);
+    --status-compliant-border: rgba(5, 150, 105, 0.25);
+
+    --status-warning-text: var(--status-warning);
+    --status-warning-bg: rgba(217, 119, 6, 0.08);
+    --status-warning-border: rgba(217, 119, 6, 0.25);
+
+    --status-critical: #e11d48;
+    --status-critical-text: var(--status-danger);
+    --status-critical-bg: rgba(225, 29, 72, 0.08);
+    --status-critical-border: rgba(225, 29, 72, 0.25);
+
+    --banner-mock-bg: rgba(217, 119, 6, 0.1);
+    --banner-mock-border: rgba(217, 119, 6, 0.4);
+    --banner-mock-text: #92400e;
+
+    --badge-provenance-bg: rgba(0, 0, 0, 0.04);
+    --badge-provenance-border: rgba(0, 0, 0, 0.12);
+    --badge-provenance-text: #64748b;
+  }
+
   body {
     font-family: var(--font-sans);
-    background-color: var(--canvas-bg);
-    color: #f4f4f5;
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     letter-spacing: normal;
@@ -100,28 +191,78 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* 運動生物力學表面階層 */
+  /* 運動生物力學表面階層 (套用新 Token) */
   .lab-card {
-    background-color: var(--surface-card);
-    border: 1px solid var(--border-hairline);
-    border-radius: 1rem;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 0.875rem;
+    box-shadow: 0 4px 20px -2px rgba(5, 10, 20, 0.45), 0 1px 0 0 rgba(255, 255, 255, 0.05) inset;
   }
 
   .lab-card-elevated {
-    background-color: var(--surface-elevated);
+    background-color: var(--bg-elevated);
     border: 1px solid var(--border-strong);
-    border-radius: 1rem;
+    border-radius: 0.875rem;
+    box-shadow: 0 8px 28px -4px rgba(5, 10, 20, 0.6), 0 1px 0 0 rgba(255, 255, 255, 0.08) inset;
   }
 
   .lab-card-interactive {
-    background-color: var(--surface-card);
-    border: 1px solid var(--border-hairline);
-    border-radius: 1rem;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 0.875rem;
+    box-shadow: 0 4px 20px -2px rgba(5, 10, 20, 0.45), 0 1px 0 0 rgba(255, 255, 255, 0.05) inset;
     transition: background-color 0.18s ease, border-color 0.18s ease;
   }
   .lab-card-interactive:hover {
-    background-color: var(--surface-elevated);
-    border-color: var(--border-interactive);
+    background-color: var(--bg-elevated);
+    border-color: var(--border-strong);
+  }
+
+  .btn-primary {
+    background-color: var(--brand-primary);
+    color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+    font-weight: 500;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    min-height: 40px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    transition: background-color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .btn-primary:hover {
+    background-color: var(--brand-primary-hover);
+  }
+
+  .btn-secondary {
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    min-height: 40px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .btn-secondary:hover {
+    background-color: rgba(51, 65, 85, 0.8);
+    border-color: var(--border-strong);
   }
 
   /* 流派徽章樣式 */
@@ -187,12 +328,12 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #090a0f;
+  background: var(--bg-canvas);
 }
 ::-webkit-scrollbar-thumb {
-  background: #232634;
+  background: var(--border-default);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #363a4f;
+  background: #3B82F6;
 }
