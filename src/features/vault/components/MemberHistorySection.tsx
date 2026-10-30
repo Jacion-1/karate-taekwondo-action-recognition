@@ -187,7 +187,7 @@ export const MemberHistorySection: React.FC<MemberHistorySectionProps> = ({
   const allActions = Object.keys(ACTION_METADATA) as ActionType[];
 
   return (
-    <div className="lab-card p-6 border border-white/[0.06] bg-zinc-900/60 rounded-2xl space-y-6">
+    <div className="lab-card p-5 sm:p-6 space-y-6">
       {/* 標題與永久留存標記 */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">

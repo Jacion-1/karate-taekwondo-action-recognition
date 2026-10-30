@@ -567,8 +567,8 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
       </div>
 
       {/* JAB AI 回合式極簡數據指標列 (Minimalist Metric Strip) — 穩定度與爆發力僅在後端提供 metrics 時顯示 */}
-      <div className="lab-card p-6 grid grid-cols-2 sm:grid-flow-col sm:auto-cols-fr gap-6 divide-y sm:divide-y-0 sm:divide-x divide-white/[0.06]">
-        <div className="sm:pr-4">
+      <div className="lab-card p-5 sm:p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-flow-col lg:auto-cols-fr gap-4 sm:gap-6 border border-white/[0.08]">
+        <div className="space-y-1">
           <div className="text-xs text-zinc-500">資料庫比對識別動作</div>
           <div className="mt-1.5 flex items-baseline gap-2">
             <span className="text-xl font-semibold text-white">
@@ -588,7 +588,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           </div>
         </div>
 
-        <div className="pt-4 sm:pt-0 sm:px-6">
+        <div className="space-y-1">
           <div className="text-xs text-zinc-500">動作評分與等級</div>
           <div className="mt-1.5 flex items-baseline gap-2.5">
             <span className="text-3xl font-semibold font-mono text-white tabular-nums">
@@ -600,7 +600,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           </div>
         </div>
 
-        <div className="pt-4 sm:pt-0 sm:px-6">
+        <div className="space-y-1">
           <div className="text-xs text-zinc-500">標準角度達成率</div>
           <div className="mt-1.5 text-2xl font-semibold font-mono text-emerald-400 tabular-nums">
             {subMetrics.complianceRate}%
@@ -608,7 +608,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         </div>
 
         {subMetrics.stabilityScore !== undefined && (
-          <div className="pt-4 sm:pt-0 sm:px-6">
+          <div className="space-y-1">
             <div className="text-xs text-zinc-500">核心軸線穩定度</div>
             <div className="mt-1.5 text-2xl font-semibold font-mono text-zinc-100 tabular-nums">
               {subMetrics.stabilityScore}
@@ -617,7 +617,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         )}
 
         {subMetrics.explosivenessScore !== undefined && (
-          <div className="pt-4 sm:pt-0 sm:px-6">
+          <div className="space-y-1">
             <div className="text-xs text-zinc-500">動作爆發力</div>
             <div className="mt-1.5 text-2xl font-semibold font-mono text-zinc-100 tabular-nums">
               {subMetrics.explosivenessScore}
@@ -625,7 +625,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           </div>
         )}
 
-        <div className="pt-4 sm:pt-0 sm:pl-6">
+        <div className="space-y-1">
           <div className="text-xs text-zinc-500">最大角度偏差</div>
           <div className="mt-1.5 text-2xl font-semibold font-mono text-rose-400 tabular-nums">
             {subMetrics.peakDeviationDeg}°
