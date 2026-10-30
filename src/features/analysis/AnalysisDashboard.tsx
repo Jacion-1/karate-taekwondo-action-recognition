@@ -568,10 +568,10 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
       {/* JAB AI 回合式極簡數據指標列 (Minimalist Metric Strip) — 穩定度與爆發力僅在後端提供 metrics 時顯示 */}
       <div className="lab-card p-5 sm:p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-flow-col lg:auto-cols-fr gap-4 sm:gap-6 border border-white/[0.08]">
-        <div className="space-y-1">
+        <div className="col-span-2 sm:col-span-1 pb-4 sm:pb-0 border-b sm:border-b-0 border-white/[0.06] space-y-1">
           <div className="text-xs text-zinc-500">資料庫比對識別動作</div>
           <div className="mt-1.5 flex items-baseline gap-2">
-            <span className="text-xl font-semibold text-white">
+            <span className="text-xl font-semibold text-white whitespace-nowrap">
               {actionMeta.label}
             </span>
             {analysis.confidence !== undefined && (

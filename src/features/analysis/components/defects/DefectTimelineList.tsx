@@ -87,23 +87,23 @@ export const DefectTimelineList: React.FC<DefectTimelineListProps> = ({
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="px-2 py-0.5 rounded-md bg-zinc-950 border border-white/[0.07] font-mono text-xs font-medium text-zinc-200 tabular-nums">
                       {defect.timestamp.toFixed(1)}s
                     </span>
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-sm font-semibold text-white whitespace-nowrap shrink-0">
                       {JOINT_LABELS[defect.jointName] || defect.jointName}
                     </span>
-                    <span className="px-1.5 py-0.5 rounded bg-zinc-900/80 border border-white/[0.05] font-mono text-[10px] text-zinc-400">
+                    <span className="px-1.5 py-0.5 rounded bg-zinc-900/80 border border-white/[0.05] font-mono text-[10px] text-zinc-400 shrink-0">
                       {defect.jointName}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-zinc-400 whitespace-nowrap shrink-0">
                       <span className={`w-1.5 h-1.5 rounded-full ${sev.dotClass}`} />
                       {sev.label}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center justify-between w-full sm:w-auto gap-2">
                     <div className="font-mono text-xs tabular-nums">
                       <span className="text-rose-400 font-semibold">
                         實測 {defect.currentValue}{unitSuffix}
@@ -113,7 +113,7 @@ export const DefectTimelineList: React.FC<DefectTimelineListProps> = ({
                         {delta !== 0 ? ` · 差 ${delta > 0 ? `+${delta}` : delta}${unitSuffix}` : ''})
                       </span>
                     </div>
-                    <span className="inline-flex items-center gap-0.5 text-[11px] text-zinc-400">
+                    <span className="inline-flex items-center gap-0.5 text-[11px] text-zinc-400 whitespace-nowrap shrink-0">
                       定位檢視
                       <ArrowUpRight className="w-3 h-3" />
                     </span>

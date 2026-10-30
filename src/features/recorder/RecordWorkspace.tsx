@@ -666,7 +666,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
                         <span
                           className={`w-1.5 h-1.5 rounded-full transition ${
                             isSelected
@@ -674,7 +674,7 @@ export const RecordWorkspace: React.FC<RecordWorkspaceProps> = ({
                               : 'bg-zinc-700 group-hover:bg-zinc-500'
                           }`}
                         />
-                        <span className="font-medium text-sm text-white">
+                        <span className="font-medium text-sm text-white shrink-0 whitespace-nowrap">
                           {displayLabel}
                         </span>
                         <span className="text-[11px] font-mono text-zinc-500 truncate max-w-[155px]">

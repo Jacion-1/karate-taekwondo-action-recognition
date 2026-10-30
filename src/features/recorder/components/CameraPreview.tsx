@@ -45,7 +45,7 @@ export const CameraPreview: React.FC<CameraPreviewProps> = React.memo(
     }, [stream]);
 
     return (
-      <div className="relative w-full aspect-video bg-[#0d0d10] rounded-2xl overflow-hidden border border-white/[0.06] flex items-center justify-center">
+      <div className="relative w-full min-h-[250px] sm:min-h-0 aspect-video bg-[#0d0d10] rounded-2xl overflow-hidden border border-white/[0.06] flex items-center justify-center">
         {stream ? (
           <video
             ref={videoRef}
@@ -55,8 +55,8 @@ export const CameraPreview: React.FC<CameraPreviewProps> = React.memo(
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center p-8 text-center max-w-sm z-10">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/[0.08] flex items-center justify-center mb-4 text-zinc-300">
+          <div className="flex flex-col items-center justify-center pt-12 pb-5 px-4 sm:p-6 text-center max-w-sm z-10">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-zinc-900 border border-white/[0.08] flex items-center justify-center mb-3 sm:mb-4 text-zinc-300">
               <Camera className="w-5 h-5" />
             </div>
             <h3 className="text-base font-medium text-white mb-1.5">
@@ -70,7 +70,7 @@ export const CameraPreview: React.FC<CameraPreviewProps> = React.memo(
             <button
               type="button"
               onClick={onStartCamera}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition"
+              className="inline-flex items-center gap-2 px-5 py-2 min-h-[40px] rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition touch-manipulation"
             >
               開啟攝影機
             </button>

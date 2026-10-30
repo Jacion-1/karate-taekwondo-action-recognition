@@ -235,11 +235,11 @@ export const JointAngleChart: React.FC<JointAngleChartProps> = React.memo(
       <div className="lab-card p-6 space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-semibold text-white">
                 關鍵特徵時序曲線 (focus_feature_1~6)
               </h3>
-              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] font-mono text-[10px] text-zinc-400">
+              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-white/[0.06] font-mono text-[10px] text-zinc-400 shrink-0 whitespace-nowrap">
                 {activeFeatureName}
               </span>
             </div>
