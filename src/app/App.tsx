@@ -159,7 +159,7 @@ export const App: React.FC = () => {
                 type="button"
                 aria-current={route.page === 'record' ? 'page' : undefined}
                 onClick={() => handleNavigateToRecord(route.focusAction)}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+                className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all min-h-[38px] inline-flex items-center justify-center touch-manipulation ${
                   route.page === 'record'
                     ? 'bg-white text-zinc-950 shadow-sm'
                     : 'text-zinc-400 hover:text-zinc-100'
@@ -172,7 +172,7 @@ export const App: React.FC = () => {
                 type="button"
                 aria-current={route.page === 'vault' ? 'page' : undefined}
                 onClick={() => navigateToVault()}
-                className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+                className={`inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all min-h-[38px] touch-manipulation ${
                   route.page === 'vault'
                     ? 'bg-white text-zinc-950 shadow-sm'
                     : 'text-zinc-400 hover:text-zinc-100'
@@ -199,7 +199,7 @@ export const App: React.FC = () => {
                   onClick={() =>
                     navigateToReport(activeAnalysisId, activeVideoId || undefined)
                   }
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all min-h-[38px] inline-flex items-center justify-center touch-manipulation ${
                     route.page === 'analysis'
                       ? 'bg-white text-zinc-950 shadow-sm'
                       : 'text-zinc-400 hover:text-zinc-100'
@@ -218,7 +218,7 @@ export const App: React.FC = () => {
                   type="button"
                   onClick={() => sessionService.loginAsMember()}
                   title="目前為訪客體驗，點擊切換為正式會員"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 hover:text-white whitespace-nowrap shrink-0 transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 hover:text-white whitespace-nowrap shrink-0 transition min-h-[38px] touch-manipulation"
                 >
                   <User className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                   <span className="hidden sm:inline">訪客模式 · 登入會員</span>
@@ -232,7 +232,7 @@ export const App: React.FC = () => {
                     setLastReport(null);
                   }}
                   title="點擊登出切換回訪客模式"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-emerald-500/20 text-xs text-emerald-400 hover:text-emerald-300 whitespace-nowrap shrink-0 transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-emerald-500/20 text-xs text-emerald-400 hover:text-emerald-300 whitespace-nowrap shrink-0 transition min-h-[38px] touch-manipulation"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                   <span>{userSession.displayName || '正式會員'}</span>
@@ -244,7 +244,7 @@ export const App: React.FC = () => {
                 type="button"
                 onClick={toggleSimulateOffline}
                 title="開發工具：切換模擬離線狀態"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 whitespace-nowrap shrink-0 transition"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 whitespace-nowrap shrink-0 transition min-h-[38px] touch-manipulation"
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${

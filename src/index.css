@@ -150,6 +150,17 @@
     border: 1px solid var(--badge-provenance-border);
     color: var(--badge-provenance-text);
   }
+
+  /* 行動觸控無障礙尺寸與手勢優化 */
+  .touch-target {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  .touch-target-compact {
+    min-height: 40px;
+    touch-action: manipulation;
+  }
 }
 
 ::-webkit-scrollbar {

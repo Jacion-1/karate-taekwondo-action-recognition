@@ -621,7 +621,7 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
                 key={act}
                 type="button"
                 onClick={() => setActionFilter(act)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition min-h-[38px] inline-flex items-center justify-center touch-manipulation ${
                   actionFilter === act
                     ? 'bg-zinc-100 text-zinc-950'
                     : 'bg-zinc-900/60 text-zinc-400 hover:text-zinc-200'
@@ -642,7 +642,7 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
                 key={st}
                 type="button"
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1 rounded-full text-xs transition ${
+                className={`px-3 py-1.5 rounded-full text-xs transition min-h-[36px] inline-flex items-center justify-center touch-manipulation ${
                   statusFilter === st
                     ? 'bg-zinc-800 text-white font-medium'
                     : 'text-zinc-500 hover:text-zinc-300'

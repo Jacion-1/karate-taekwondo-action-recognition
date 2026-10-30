@@ -548,7 +548,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             <button
               type="button"
               onClick={() => onReverifyAction(analysis.actionType)}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-medium transition"
+              className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[38px] rounded-full bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-medium transition touch-manipulation"
             >
               <Video className="w-3.5 h-3.5" />
               再次拍攝驗證
@@ -558,7 +558,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           <button
             type="button"
             onClick={handleExportJson}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-zinc-200 text-xs font-medium transition"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/[0.08] text-zinc-200 text-xs font-medium transition touch-manipulation"
           >
             <Download className="w-3.5 h-3.5 text-zinc-400" />
             匯出 JSON
@@ -760,7 +760,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                         key={kf.label}
                         type="button"
                         onClick={() => handleSeekToTime(kf.time)}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-mono transition ${
+                        className={`px-3 py-1.5 min-h-[36px] inline-flex items-center justify-center rounded-full text-[11px] font-mono transition touch-manipulation ${
                           isActive
                             ? 'bg-zinc-200 text-zinc-950 font-medium'
                             : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-white/[0.05]'
@@ -782,7 +782,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   type="button"
                   aria-label={isPlaying ? '暫停影片' : '播放影片'}
                   onClick={handleTogglePlay}
-                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition touch-manipulation"
                 >
                   {isPlaying ? (
                     <>
@@ -801,7 +801,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   type="button"
                   aria-label="上一幀"
                   onClick={() => handleStepFrame(-1)}
-                  className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-300 transition"
+                  className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-full hover:bg-zinc-800 text-zinc-300 transition touch-manipulation"
                   title={`上一幀 (-${frameStepSeconds.toFixed(3)}s @ ${effectiveFps}fps, ←)`}
                 >
                   <StepBack className="w-4 h-4" />
@@ -810,7 +810,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   type="button"
                   aria-label="下一幀"
                   onClick={() => handleStepFrame(1)}
-                  className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-300 transition"
+                  className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-full hover:bg-zinc-800 text-zinc-300 transition touch-manipulation"
                   title={`下一幀 (+${frameStepSeconds.toFixed(3)}s @ ${effectiveFps}fps, →)`}
                 >
                   <StepForward className="w-4 h-4" />
@@ -819,7 +819,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                   type="button"
                   aria-label="重頭開始播放"
                   onClick={() => handleSeekToTime(0)}
-                  className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition"
+                  className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition touch-manipulation"
                   title="重頭開始"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -833,7 +833,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
                     key={rate}
                     type="button"
                     onClick={() => handleChangeSpeed(rate)}
-                    className={`px-2.5 py-0.5 rounded-full font-mono text-[11px] transition ${
+                    className={`px-3 py-1.5 min-h-[36px] inline-flex items-center justify-center rounded-full font-mono text-[11px] transition touch-manipulation ${
                       playbackRate === rate
                         ? 'bg-zinc-200 text-zinc-950 font-medium'
                         : 'text-zinc-400 hover:text-zinc-200'
