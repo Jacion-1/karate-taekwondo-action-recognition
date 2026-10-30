@@ -50,22 +50,22 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
       >
         {toasts.map((t) => {
           const iconMap: Record<ToastType, React.ReactNode> = {
-            success: <Check className="w-4 h-4 text-emerald-400 shrink-0" />,
-            info: <Info className="w-4 h-4 text-zinc-300 shrink-0" />,
-            warning: <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />,
-            error: <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />,
+            success: <Check className="w-4 h-4 text-status-success shrink-0" />,
+            info: <Info className="w-4 h-4 text-brand-primary shrink-0" />,
+            warning: <AlertCircle className="w-4 h-4 text-status-warning shrink-0" />,
+            error: <AlertCircle className="w-4 h-4 text-status-danger shrink-0" />,
           };
 
           return (
             <div
               key={t.id}
-              className="pointer-events-auto flex items-start gap-3 px-4 py-3.5 rounded-2xl bg-zinc-900/95 border border-white/[0.08] backdrop-blur-xl shadow-lg text-zinc-100"
+              className="pointer-events-auto flex items-start gap-3 px-4 py-3.5 rounded-panel bg-app-surface/95 border border-app-border backdrop-blur-xl shadow-card text-app-primary"
             >
               <div className="mt-0.5">{iconMap[t.type]}</div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-white">{t.title}</p>
+                <p className="text-body font-medium text-app-primary">{t.title}</p>
                 {t.message && (
-                  <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed break-words">
+                  <p className="text-caption text-app-muted mt-0.5 leading-relaxed break-words">
                     {t.message}
                   </p>
                 )}
@@ -73,7 +73,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
               <button
                 type="button"
                 onClick={() => removeToast(t.id)}
-                className="text-zinc-500 hover:text-zinc-200 p-0.5 rounded-lg transition"
+                className="text-app-muted hover:text-app-primary p-0.5 rounded-control transition"
                 aria-label="關閉通知"
               >
                 <X className="w-3.5 h-3.5" />

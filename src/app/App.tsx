@@ -138,31 +138,31 @@ export const App: React.FC = () => {
 
   return (
     <ToastProvider>
-      <div className="min-h-screen flex flex-col bg-[#090a0f] text-zinc-100">
+      <div className="min-h-screen flex flex-col bg-app-canvas text-app-primary">
         {/* 極簡頂部導覽列：支援 390px 窄螢幕防擠壓排版 */}
-        <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-[#090a0f]/90 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-app-border bg-app-header backdrop-blur-xl">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 min-h-16 py-2.5 flex flex-wrap items-center justify-between gap-2.5 sm:gap-4">
             {/* 左側：專題名稱 */}
             <div className="flex items-center gap-3 whitespace-nowrap shrink-0">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-tr from-rose-500 to-cyan-400" />
-              <span className="text-sm sm:text-base font-semibold text-white whitespace-nowrap">
+              <div className="w-2.5 h-2.5 rounded-sm bg-gradient-to-tr from-brand-primary to-discipline-tkd shadow-sm" />
+              <span className="text-heading-md font-semibold text-app-primary whitespace-nowrap">
                 空手道與跆拳道動作識別系統
               </span>
             </div>
 
-            {/* 中央：分段式導覽器 */}
+            {/* 中央：分段式導覽器 (現代平底方角按鈕設計) */}
             <nav
               aria-label="主導覽列"
-              className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-full border border-white/[0.06] shrink-0"
+              className="flex items-center gap-1.5 bg-app-surface/90 p-1 rounded-control border border-app-border shrink-0"
             >
               <button
                 type="button"
                 aria-current={route.page === 'record' ? 'page' : undefined}
                 onClick={() => handleNavigateToRecord(route.focusAction)}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all min-h-[38px] inline-flex items-center justify-center touch-manipulation ${
+                className={`px-4 py-1.5 rounded-control text-caption font-medium whitespace-nowrap shrink-0 transition-all min-h-[38px] inline-flex items-center justify-center touch-manipulation ${
                   route.page === 'record'
-                    ? 'bg-white text-zinc-950 shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-100'
+                    ? 'bg-brand-primary text-white shadow-brand font-semibold'
+                    : 'text-app-muted hover:text-app-primary hover:bg-app-elevated/50'
                 }`}
               >
                 拍攝與輸入
@@ -172,19 +172,19 @@ export const App: React.FC = () => {
                 type="button"
                 aria-current={route.page === 'vault' ? 'page' : undefined}
                 onClick={() => navigateToVault()}
-                className={`inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all min-h-[38px] touch-manipulation ${
+                className={`inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-control text-caption font-medium whitespace-nowrap shrink-0 transition-all min-h-[38px] touch-manipulation ${
                   route.page === 'vault'
-                    ? 'bg-white text-zinc-950 shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-100'
+                    ? 'bg-brand-primary text-white shadow-brand font-semibold'
+                    : 'text-app-muted hover:text-app-primary hover:bg-app-elevated/50'
                 }`}
               >
                 <span>歷史與影片庫</span>
                 {videoCount > 0 && (
                   <span
-                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono tabular-nums ${
+                    className={`px-1.5 py-0.5 rounded-badge text-caption font-mono tabular-nums leading-none ${
                       route.page === 'vault'
-                        ? 'bg-zinc-950/15 text-zinc-950 font-semibold'
-                        : 'bg-zinc-800 text-zinc-300'
+                        ? 'bg-white/20 text-white font-semibold'
+                        : 'bg-app-elevated text-app-secondary border border-app-subtle'
                     }`}
                   >
                     {videoCount}
@@ -199,10 +199,10 @@ export const App: React.FC = () => {
                   onClick={() =>
                     navigateToReport(activeAnalysisId, activeVideoId || undefined)
                   }
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all min-h-[38px] inline-flex items-center justify-center touch-manipulation ${
+                  className={`px-4 py-1.5 rounded-control text-caption font-medium whitespace-nowrap shrink-0 transition-all min-h-[38px] inline-flex items-center justify-center touch-manipulation ${
                     route.page === 'analysis'
-                      ? 'bg-white text-zinc-950 shadow-sm'
-                      : 'text-zinc-400 hover:text-zinc-100'
+                      ? 'bg-brand-primary text-white shadow-brand font-semibold'
+                      : 'text-app-muted hover:text-app-primary hover:bg-app-elevated/50'
                   }`}
                 >
                   分析報告
@@ -218,9 +218,9 @@ export const App: React.FC = () => {
                   type="button"
                   onClick={() => sessionService.loginAsMember()}
                   title="目前為訪客體驗，點擊切換為正式會員"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 hover:text-white whitespace-nowrap shrink-0 transition min-h-[38px] touch-manipulation"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-app-surface hover:bg-app-elevated border border-app-border text-caption text-app-secondary hover:text-app-primary whitespace-nowrap shrink-0 transition min-h-[38px] touch-manipulation"
                 >
-                  <User className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                  <User className="w-3.5 h-3.5 text-app-muted shrink-0" />
                   <span className="hidden sm:inline">訪客模式 · 登入會員</span>
                   <span className="sm:hidden">訪客 · 登入</span>
                 </button>
@@ -232,11 +232,11 @@ export const App: React.FC = () => {
                     setLastReport(null);
                   }}
                   title="點擊登出切換回訪客模式"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-emerald-500/20 text-xs text-emerald-400 hover:text-emerald-300 whitespace-nowrap shrink-0 transition min-h-[38px] touch-manipulation"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-app-surface hover:bg-app-elevated border border-status-success/30 text-caption text-status-success hover:text-emerald-300 whitespace-nowrap shrink-0 transition min-h-[38px] touch-manipulation"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-status-success shrink-0" />
                   <span>{userSession.displayName || '正式會員'}</span>
-                  <LogOut className="w-3 h-3 text-zinc-400 ml-0.5 shrink-0" />
+                  <LogOut className="w-3 h-3 text-app-muted ml-0.5 shrink-0" />
                 </button>
               )}
 
@@ -244,11 +244,11 @@ export const App: React.FC = () => {
                 type="button"
                 onClick={toggleSimulateOffline}
                 title="開發工具：切換模擬離線狀態"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 whitespace-nowrap shrink-0 transition min-h-[38px] touch-manipulation"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-control bg-app-surface hover:bg-app-elevated border border-app-border text-caption text-app-secondary whitespace-nowrap shrink-0 transition min-h-[38px] touch-manipulation"
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                    canSubmitAnalysis ? 'bg-emerald-400' : 'bg-amber-400'
+                    canSubmitAnalysis ? 'bg-status-success' : 'bg-status-warning'
                   }`}
                 />
                 <span className="hidden sm:inline">
@@ -264,9 +264,9 @@ export const App: React.FC = () => {
                 type="button"
                 onClick={() => setIsApiDrawerOpen(true)}
                 title="後端 API 連線設定"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-900/70 hover:bg-zinc-800/80 border border-white/[0.06] text-xs text-zinc-300 hover:text-white whitespace-nowrap shrink-0 transition"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-control bg-app-surface hover:bg-app-elevated border border-app-border text-caption text-app-secondary hover:text-app-primary whitespace-nowrap shrink-0 transition min-h-[38px]"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-app-muted shrink-0" />
                 <span>
                   {apiConfig.mode === 'mock' ? '模擬引擎' : 'REST API'}
                 </span>
@@ -296,7 +296,7 @@ export const App: React.FC = () => {
           {route.page === 'analysis' && activeAnalysisId && (
             <Suspense
               fallback={
-                <div className="lab-card p-16 text-center text-xs text-zinc-500">
+                <div className="lab-card p-16 text-center text-caption text-app-muted">
                   載入分析報告模組中...
                 </div>
               }

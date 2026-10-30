@@ -130,22 +130,22 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-[#0e1017] border-l border-white/[0.1] h-full flex flex-col justify-between overflow-y-auto">
+      <div className="w-full max-w-lg bg-app-surface border-l border-app-border h-full flex flex-col justify-between overflow-y-auto">
         <div className="p-6 sm:p-8 space-y-8">
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-base font-semibold text-white">
+              <h2 className="text-heading-md font-semibold text-app-primary">
                 後端連線與資料合約設定
               </h2>
-              <p className="text-xs text-zinc-400 mt-1">
+              <p className="text-caption text-app-muted mt-1">
                 切換前端模擬演算法或連接遠端後端辨識伺服器
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-zinc-800/80 text-zinc-400 hover:text-white transition"
+              className="p-2 rounded-control hover:bg-app-elevated text-app-muted hover:text-app-primary transition"
             >
               <X className="w-4 h-4" />
             </button>
@@ -153,21 +153,21 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
 
           {/* 雙模式切換 */}
           <div className="space-y-3">
-            <label className="text-xs font-medium text-zinc-400">
+            <label className="text-caption font-medium text-app-muted">
               運算模式
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => handleSave('mock')}
-                className={`p-4 rounded-2xl border text-left transition ${
+                className={`p-4 rounded-panel border text-left transition ${
                   config.mode === 'mock'
-                    ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
-                    : 'bg-zinc-900/40 border-white/[0.06] text-zinc-400 hover:border-white/15'
+                    ? 'bg-status-warning/15 border-status-warning/40 text-amber-200'
+                    : 'bg-app-elevated/40 border-app-border text-app-muted hover:border-app-strong'
                 }`}
               >
-                <div className="font-medium text-sm">內建模擬引擎</div>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                <div className="font-medium text-body text-app-primary">內建模擬引擎</div>
+                <p className="text-caption text-app-muted mt-1 leading-relaxed">
                   無需啟動後端，於本地端模擬上傳與關節角度分析
                 </p>
               </button>
@@ -175,14 +175,14 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
               <button
                 type="button"
                 onClick={() => handleSave('http')}
-                className={`p-4 rounded-2xl border text-left transition ${
+                className={`p-4 rounded-panel border text-left transition ${
                   config.mode === 'http'
-                    ? 'bg-cyan-950/30 border-cyan-500/40 text-cyan-200'
-                    : 'bg-zinc-900/40 border-white/[0.06] text-zinc-400 hover:border-white/15'
+                    ? 'bg-brand-primary/15 border-brand-primary/40 text-blue-200'
+                    : 'bg-app-elevated/40 border-app-border text-app-muted hover:border-app-strong'
                 }`}
               >
-                <div className="font-medium text-sm">遠端 REST API</div>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                <div className="font-medium text-body text-app-primary">遠端 REST API</div>
+                <p className="text-caption text-app-muted mt-1 leading-relaxed">
                   透過 Multipart 將影片上傳至後端伺服器推論
                 </p>
               </button>
@@ -190,9 +190,9 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
           </div>
 
           {/* 連線設定 */}
-          <div className="space-y-4 pt-2 border-t border-white/[0.06]">
+          <div className="space-y-4 pt-3 border-t border-app-subtle">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-zinc-400">
+              <span className="text-caption font-medium text-app-muted">
                 伺服器端點
               </span>
               <button
@@ -202,7 +202,7 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
                   setConfig(reset);
                   onConfigChange?.(reset);
                 }}
-                className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition"
+                className="inline-flex items-center gap-1 text-caption text-app-muted hover:text-app-primary transition"
               >
                 <RotateCcw className="w-3 h-3" />
                 重設預設值
@@ -211,7 +211,7 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2 space-y-1.5">
-                <label className="text-xs text-zinc-500">Base URL</label>
+                <label className="text-caption text-app-muted">Base URL</label>
                 <input
                   type="url"
                   value={config.baseUrl}
@@ -219,12 +219,12 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
                     setConfig((prev) => ({ ...prev, baseUrl: e.target.value }))
                   }
                   placeholder="http://localhost:8000"
-                  className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-xs font-mono text-zinc-100 focus:outline-none focus:border-white/30"
+                  className="w-full px-3.5 py-2 rounded-control bg-app-well border border-app-border text-caption font-mono text-app-primary focus:outline-none focus:border-brand-primary"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs text-zinc-500">逾時 (ms)</label>
+                <label className="text-caption text-app-muted">逾時 (ms)</label>
                 <input
                   type="number"
                   step={1000}
@@ -236,13 +236,13 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
                       timeoutMs: Number(e.target.value) || 30000,
                     }))
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-xs font-mono text-zinc-100 focus:outline-none focus:border-white/30"
+                  className="w-full px-3.5 py-2 rounded-control bg-app-well border border-app-border text-caption font-mono text-app-primary focus:outline-none focus:border-brand-primary"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">
+              <label className="text-caption text-app-muted">
                 API Key（選填，將帶入 Authorization: Bearer 標頭）
               </label>
               <input
@@ -255,9 +255,9 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
                   }))
                 }
                 placeholder="留空則不傳送 Authorization 標頭"
-                className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-white/[0.08] text-xs font-mono text-zinc-100 focus:outline-none focus:border-white/30"
+                className="w-full px-3.5 py-2 rounded-control bg-app-well border border-app-border text-caption font-mono text-app-primary focus:outline-none focus:border-brand-primary"
               />
-              <p className="text-[11px] text-amber-300/90 leading-relaxed">
+              <p className="text-caption text-status-warning/90 leading-relaxed">
                 Key 儲存在瀏覽器 localStorage，不是機密；正式環境請由後端驗證。
               </p>
             </div>
@@ -267,16 +267,16 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
                 type="button"
                 onClick={handlePingHealth}
                 disabled={healthStatus.checking}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-200 border border-white/[0.08] transition"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-control bg-app-elevated hover:bg-slate-700/80 text-caption font-medium text-app-primary border border-app-border transition"
               >
-                <Activity className="w-3.5 h-3.5 text-zinc-400" />
+                <Activity className="w-3.5 h-3.5 text-app-muted" />
                 {healthStatus.checking ? '測試中...' : '測試連線狀態'}
               </button>
 
               <button
                 type="button"
                 onClick={() => handleSave()}
-                className="px-4 py-2 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-medium text-xs transition"
+                className="btn-primary text-caption"
               >
                 儲存設定
               </button>
@@ -284,16 +284,16 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
 
             {healthStatus.message && (
               <div
-                className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
+                className={`p-3 rounded-control border text-caption flex items-center gap-2 ${
                   healthStatus.ok
-                    ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-200'
-                    : 'bg-rose-950/30 border-rose-500/30 text-rose-200'
+                    ? 'bg-status-success/15 border-status-success/30 text-emerald-300'
+                    : 'bg-status-danger/15 border-status-danger/30 text-rose-300'
                 }`}
               >
                 {healthStatus.ok ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-status-success shrink-0" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <AlertCircle className="w-4 h-4 text-status-danger shrink-0" />
                 )}
                 <span className="font-mono">{healthStatus.message}</span>
               </div>
@@ -301,19 +301,19 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
           </div>
 
           {/* 資料合約 */}
-          <div className="space-y-3 pt-2 border-t border-white/[0.06]">
+          <div className="space-y-3 pt-3 border-t border-app-subtle">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-zinc-400">
-                API 規格 (`POST /api/v1/analyses`)
+              <label className="text-caption font-medium text-app-muted">
+                API 規格 (POST /api/v1/analyses)
               </label>
               <button
                 type="button"
                 onClick={handleCopyContract}
-                className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition"
+                className="inline-flex items-center gap-1.5 text-caption text-app-muted hover:text-app-primary transition"
               >
                 {copied ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <Check className="w-3.5 h-3.5 text-status-success" />
                     已複製
                   </>
                 ) : (
@@ -325,23 +325,23 @@ export const ApiConnectionDrawer: React.FC<ApiConnectionDrawerProps> = ({
               </button>
             </div>
 
-            <div className="p-3 rounded-xl bg-zinc-900/40 border border-white/[0.05] text-[11px] text-zinc-400 space-y-1">
+            <div className="p-3 rounded-panel bg-app-well/60 border border-app-border text-caption text-app-muted space-y-1">
               <div>
-                <span className="text-zinc-200 font-mono">Multipart 欄位：</span>
-                <code className="text-zinc-300">video</code> (File)、
-                <code className="text-zinc-300">clientVideoId</code>、
-                <code className="text-zinc-300">duration</code>、選填{' '}
-                <code className="text-zinc-300">requestedActionType</code>
+                <span className="text-app-secondary font-mono">Multipart 欄位：</span>
+                <code className="text-app-primary">video</code> (File)、
+                <code className="text-app-primary">clientVideoId</code>、
+                <code className="text-app-primary">duration</code>、選填{' '}
+                <code className="text-app-primary">requestedActionType</code>
               </div>
               <div>
-                <span className="text-zinc-200 font-mono">回應模式：</span>
-                支援 <code className="text-zinc-300">200 OK</code> 同步回傳，或{' '}
-                <code className="text-zinc-300">202 Accepted</code> 輪詢{' '}
-                <code className="text-zinc-300">GET /api/v1/analyses/&#123;analysisId&#125;</code>
+                <span className="text-app-secondary font-mono">回應模式：</span>
+                支援 <code className="text-app-primary">200 OK</code> 同步回傳，或{' '}
+                <code className="text-app-primary">202 Accepted</code> 輪詢{' '}
+                <code className="text-app-primary">GET /api/v1/analyses/&#123;analysisId&#125;</code>
               </div>
             </div>
 
-            <pre className="p-4 rounded-2xl bg-zinc-900/70 border border-white/[0.06] text-[11px] font-mono text-zinc-300 overflow-x-auto leading-relaxed">
+            <pre className="p-4 rounded-panel bg-app-well border border-app-border text-caption font-mono text-app-secondary overflow-x-auto leading-relaxed">
               {SAMPLE_CONTRACT_JSON}
             </pre>
           </div>
