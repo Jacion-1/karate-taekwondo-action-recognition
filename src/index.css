@@ -3,14 +3,41 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --font-sans: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', 'Heiti TC', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: var(--font-sans);
     background-color: #09090b;
     color: #f4f4f5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: normal;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    letter-spacing: normal;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 }
 
 @layer utilities {
+  .font-mono-numbers {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Modern Minimalism 卡片表面：極細微邊框、柔和深色中性底、幾乎無重陰影 */
   .lab-card {
     @apply bg-zinc-900/50 border border-white/[0.06] rounded-2xl;
@@ -18,10 +45,6 @@
 
   .lab-card-interactive {
     @apply bg-zinc-900/50 border border-white/[0.06] rounded-2xl transition-colors duration-200 hover:bg-zinc-900/80 hover:border-white/[0.12];
-  }
-
-  .tabular-nums {
-    font-variant-numeric: tabular-nums;
   }
 }
 

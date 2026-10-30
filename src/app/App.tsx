@@ -145,7 +145,7 @@ export const App: React.FC = () => {
             {/* 左側：專題名稱 */}
             <div className="flex items-center gap-3 whitespace-nowrap shrink-0">
               <div className="w-2 h-2 rounded-full bg-white" />
-              <span className="text-sm sm:text-base font-semibold tracking-tight text-white whitespace-nowrap">
+              <span className="text-sm sm:text-base font-semibold text-white whitespace-nowrap">
                 空手道與跆拳道動作識別系統
               </span>
             </div>

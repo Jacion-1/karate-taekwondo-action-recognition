@@ -550,7 +550,7 @@ export const VideoVault: React.FC<VideoVaultProps> = ({
       <div className="flex flex-wrap items-end justify-between gap-4 pb-6 border-b border-white/[0.06]">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-white tracking-tight">
+            <h2 className="text-xl font-semibold text-white leading-snug">
               動作影片庫
             </h2>
             {storageEstimate && (

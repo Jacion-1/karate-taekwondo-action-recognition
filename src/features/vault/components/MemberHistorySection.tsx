@@ -192,7 +192,7 @@ export const MemberHistorySection: React.FC<MemberHistorySectionProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
           <TrendingUp className="w-4 h-4 text-emerald-400" />
-          <h2 className="text-base font-semibold text-white tracking-tight">
+          <h2 className="text-base font-semibold text-white leading-snug">
             正式會員長期動作評分走勢與歷史紀錄
           </h2>
         </div>
